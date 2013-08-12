@@ -7,7 +7,7 @@ import re
 # Create the context submenu based on the current library of snippets
 
 
-def buildfolder(path):
+def buildfolder(path, nt):
 	strReturn = ''
 	strFolder = ''
 	snips = os.listdir(path)
@@ -15,12 +15,14 @@ def buildfolder(path):
 	f = 0
 	for snip in snips:
 		if os.path.isdir(path + snip):
-			if f > 0:
-				strFolder += ','
-			strFolder += '{"caption":"' + snip + '","children":['
-			strFolder += buildfolder(path + snip + '/')
-			strFolder += ']}'
-			f += 1
+			strTemp = buildfolder(path + snip + '/', nt + '\t\t')
+			if strTemp != '':
+				if f > 0:
+					strFolder += ','
+				strFolder += nt + '{' + nt + '\t"caption": "' + snip + '",' + nt + '\t"children": ['
+				strFolder += strTemp
+				strFolder += nt + '\t]' + nt + '}'
+				f += 1
 		else:
 			if i > 0:
 				strReturn += ','
@@ -32,9 +34,9 @@ def buildfolder(path):
 	return strFolder + strReturn
 
 submen = open(sublime.packages_path() + "\My Snippets\Context.sublime-menu", 'w')
-submen.write('[{"id":"my-snippets","caption":"My Snippets","children":[')
-submen.write(buildfolder(sublime.packages_path().replace('\\','/') + "/My Snippets/snippets/"))
-submen.write("]}]")
+submen.write('[\n\t{\n\t\t"id":"my-snippets",\n\t\t"caption":"My Snippets",\n\t\t"children":[')
+submen.write(buildfolder(sublime.packages_path().replace('\\','/') + "/My Snippets/snippets/", '\n\t\t\t'))
+submen.write("\n\t\t]\n\t}\n]\n")
 submen.close()
 
 
