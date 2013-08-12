@@ -42,32 +42,36 @@ def buildfolder(path, nt):
 	return strFolder + strReturn
 
 # build menus from local directory
-loc = buildfolder(root + "snippets/", '\n\t\t\t')
+#loc = buildfolder(root + "snippets/", '\n\t\t\t')
 
 # build menus from settings
 strPaths = ''
 nt = '\n\t\t\t'
 for path in paths:
-	if "path" in path and "display" in path and path['path'] != '' and path['display'] != '' and os.path.isdir(path['path']):
+	if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
 		strTemp = buildfolder(path['path'],nt + '\t\t')
 		if strTemp != '':
 			if strPaths != '':
 				strPaths += ','
-			strPaths += nt + '{' + nt + '\t"caption": "' + path['display'] + '",' + nt + '\t"children": ['
-			strPaths += strTemp
-			strPaths += nt + '\t]' + nt + '}'
+			if 'display' in path and path['display'] != '':
+				strPaths += nt + '{'\
+						 + nt + '\t"caption": "' + path['display'] + '",'\
+						 + nt + '\t"children": ['
+				strPaths += strTemp
+				strPaths += nt + '\t]' + nt + '}'
+			else:
+				strPaths += strTemp
 
-if loc != '' and strPaths != '':
-	loc += ',' + strPaths
-elif loc == '' and strPaths != '':
-	loc = strPaths
 
 # build file for context menu
-submen = open(root + "Context.sublime-menu", 'w')
-submen.write('[\n\t{\n\t\t"id":"my-snippets",\n\t\t"caption":"My Snippets",\n\t\t"children":[')
-submen.write(loc)
-submen.write("\n\t\t]\n\t}\n]\n")
-submen.close()
+if strPaths != '':
+	submen = open(root + "Context.sublime-menu", 'w')
+	submen.write('[\n\t{\n\t\t"id":"my-snippets",\n\t\t"caption":"My Snippets",\n\t\t"children":[')
+	submen.write(strPaths)
+	submen.write("\n\t\t]\n\t}\n]\n")
+	submen.close()
+else:
+	print('No snippets found: Context Menu not created.')
 
 # This command gets run from the context menu selections
 class mysnippetsCommand(sublime_plugin.TextCommand):

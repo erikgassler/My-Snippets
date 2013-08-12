@@ -1,11 +1,12 @@
 {
 	// Setup other folders that contain code snippets you want to include in your library
 	// Each folder setting must have a "display" and "path" name|value pair
-	// If either display or path is empty, or if path is not an accessible directory, then that setting will be skipped
+	// If path is empty, or if path is not an accessible directory, then that setting will be skipped
+	// Leaving display empty will place directory contents in root menu
 	"folders":[
 		{
-			"display": "Other",
-			"path": "C:/code library/"
+			"display": "",
+			"path": "C:/My Snippets/"
 		}
 	]
 }
