@@ -4,8 +4,16 @@ import sublime_plugin
 import threading
 import re
 
-# Create the context submenu based on the current library of snippets
+# Root path for This Package
+root = sublime.packages_path().replace('\\','/') + '/My Snippets/'
 
+# Load all of our package settings into an object
+settings = sublime.load_settings('MySnippets.sublime-settings')
+
+# Get folders as paths to sync snippets from
+paths = settings.get("folders")
+
+# Create the context submenu based on the current library of snippets
 
 def buildfolder(path, nt):
 	strReturn = ''
@@ -27,19 +35,41 @@ def buildfolder(path, nt):
 			if i > 0:
 				strReturn += ','
 			cap = re.sub('\..*','',snip)
-			strReturn += '{"caption":"' + cap + '","command":"mysnippets","args":{"snippet":"' + path + snip + '"}}'
+			strReturn += nt + '{' + nt + '\t"caption": "' + cap + '",' + nt + '\t"command": "mysnippets",' + nt + '\t"args": {' + nt + '\t\t"snippet": "' + path + snip + '"' + nt + '\t}' + nt + '}'
 			i += 1
 	if strFolder != '' and strReturn != '':
 		strFolder += ','
 	return strFolder + strReturn
 
-submen = open(sublime.packages_path() + "\My Snippets\Context.sublime-menu", 'w')
+# build menus from local directory
+loc = buildfolder(root + "snippets/", '\n\t\t\t')
+
+# build menus from settings
+strPaths = ''
+nt = '\n\t\t\t'
+for path in paths:
+	if "path" in path and "display" in path and path['path'] != '' and path['display'] != '' and os.path.isdir(path['path']):
+		strTemp = buildfolder(path['path'],nt + '\t\t')
+		if strTemp != '':
+			if strPaths != '':
+				strPaths += ','
+			strPaths += nt + '{' + nt + '\t"caption": "' + path['display'] + '",' + nt + '\t"children": ['
+			strPaths += strTemp
+			strPaths += nt + '\t]' + nt + '}'
+
+if loc != '' and strPaths != '':
+	loc += ',' + strPaths
+elif loc == '' and strPaths != '':
+	loc = strPaths
+
+# build file for context menu
+submen = open(root + "Context.sublime-menu", 'w')
 submen.write('[\n\t{\n\t\t"id":"my-snippets",\n\t\t"caption":"My Snippets",\n\t\t"children":[')
-submen.write(buildfolder(sublime.packages_path().replace('\\','/') + "/My Snippets/snippets/", '\n\t\t\t'))
+submen.write(loc)
 submen.write("\n\t\t]\n\t}\n]\n")
 submen.close()
 
-
+# This command gets run from the context menu selections
 class mysnippetsCommand(sublime_plugin.TextCommand):
 	def run(self, edit, **args):
 		sels = self.view.sel()
@@ -64,9 +94,4 @@ class mysnippetsCommand(sublime_plugin.TextCommand):
 				snippet.seek(0)
 
 				self.view.replace(edit, sel, txt)
-
-
-	def popup(self, edit, args):
-		sels = self.view.sel()
-		print('My Snippets Popup starting')
 
