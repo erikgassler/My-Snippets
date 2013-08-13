@@ -8,7 +8,8 @@ def setup():
 	# Load all of our package settings into a global object
 	settings = sublime.load_settings('MySnippets.sublime-settings')
 	settings.add_on_change('changed',buildsnippets)
-	buildsnippets()
+	# set 0 to make sure we always start out with an update
+	latestupdates(0)
 
 def buildfolder(path, nt):
 	strReturn = ''
@@ -43,7 +44,7 @@ def buildsnippets():
 
 	# Make sure user settings file exists
 	if os.path.exists(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings') == False:
-		print("Creating: " + sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings')
+		debug("Creating: " + sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings')
 		subset = open(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings', 'w')
 		subset.write('{'\
 			+ '\n\t// Setup other folders that contain code snippets you want to include in your library'\
@@ -63,7 +64,6 @@ def buildsnippets():
 	paths = settings.get("folders")
 
 	# Create the context submenu based on the current library of snippets
-	print(paths)
 
 	# build menus from settings
 	if paths != None:
@@ -85,7 +85,7 @@ def buildsnippets():
 						else:
 							strPaths += strTemp
 		except:
-			print('Invalid path')
+			debug('Invalid path')
 
 		# build file for context menu
 		if strPaths != '':
@@ -94,11 +94,11 @@ def buildsnippets():
 			submen.write(strPaths)
 			submen.write("\n\t\t]\n\t}\n]\n")
 			submen.close()
-			print('Snippets Menu Built.')
+			debug('Snippets Menu Built.')
 		else:
-			print('No snippets found: Context Menu not created.')
+			debug('No snippets found: Context Menu not created.')
 	else:
-		print('No "folders" found in settings.')
+		debug('No "folders" found in settings.')
 
 # This command gets run from the context menu selections
 class mysnippetsCommand(sublime_plugin.TextCommand):
@@ -106,25 +106,29 @@ class mysnippetsCommand(sublime_plugin.TextCommand):
 		sels = self.view.sel()
 
 		# Open the file dicated by args['snippet']
-		with open(args['snippet']) as snippet:
-			for sel in sels:
+		if os.path.isfile(args['snippet']):
+			with open(args['snippet']) as snippet:
+				for sel in sels:
 
-				# Determine the indent of the text
-				(row, col) = self.view.rowcol(sel.begin())
-				indent_region = self.view.find('^\s+', self.view.text_point(row, 0))
-				if indent_region and self.view.rowcol(indent_region.begin())[0] == row:
-					indent = self.view.substr(indent_region).replace('\n','')
-				else:
-					indent = ''
-				txt = ''
-				i = 0
-				for line in snippet:
-					txt += (indent if i > 0 else '') + line
-					i += 1
+					# Determine the indent of the text
+					(row, col) = self.view.rowcol(sel.begin())
+					indent_region = self.view.find('^\s+', self.view.text_point(row, 0))
+					if indent_region and self.view.rowcol(indent_region.begin())[0] == row:
+						indent = self.view.substr(indent_region).replace('\n','')
+					else:
+						indent = ''
+					txt = ''
+					i = 0
+					for line in snippet:
+						txt += (indent if i > 0 else '') + line
+						i += 1
 
-				snippet.seek(0)
+					snippet.seek(0)
 
-				self.view.replace(edit, sel, txt)
+					self.view.replace(edit, sel, txt)
+		else:
+			sublime.error_message("File not found, has it been deleted?")
+			buildsnippets()
 
 class snippetbuilder(threading.Thread):
 	def __init__(self):
@@ -132,5 +136,62 @@ class snippetbuilder(threading.Thread):
 
 	def run(self):
 		buildsnippets()
+
+# This function gets the latest timestamp of files in the users folder paths
+def latestupdates(lastdate):
+	settings = sublime.load_settings('MySnippets.sublime-settings')
+	ldat = lastdate
+
+	# Get folders as paths to sync snippets from
+	paths = settings.get("folders")
+	fsync = settings.get("livesync", True)
+	# If setting not found default wait time to 10 minutes
+	stime = settings.get("syncewait", 10 * 60 * 1000)
+
+	chkdate = 0
+
+	debug("Running latest updates: " + str(fsync) + ", " + str(stime) + ", " + str(ldat))
+
+	if paths != None:
+		try:
+			for path in paths:
+				if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
+					tmpdate = folderdate(path['path'])
+					if tmpdate != '' and (chkdate == '' or tmpdate > chkdate):
+						chkdate = tmpdate
+
+		except:
+			debug('My Snippets Error: Error checking paths for updated files.')
+
+
+	if chkdate > 0 and (ldat == 0 or chkdate > ldat):
+		buildsnippets()
+		ldat = chkdate
+		debug("My Snippets Updated: " + str(ldat) + ', ' + str(chkdate))
+
+	if fsync == True and stime > 0:
+		sublime.set_timeout(lambda: latestupdates(ldat), stime)
+
+def folderdate(path):
+	chkdate = 0
+	snips = os.listdir(path)
+	for snip in snips:
+		if os.path.isdir(path + snip):
+			tmpdate = folderdate(path + snip + '/')
+			if tmpdate != '' and (chkdate == '' or tmpdate > chkdate):
+				chkdate = tmpdate
+		else:
+			tmpdate = os.path.getmtime(path + snip)
+			if tmpdate != '' and (chkdate == '' or tmpdate > chkdate):
+				chkdate = tmpdate
+
+	return chkdate
+
+def debug(debugtext):
+	settings = sublime.load_settings('MySnippets.sublime-settings')
+	dbg = settings.get("debug",True)
+	if dbg == True:
+		print(debugtext)
+
 
 sublime.set_timeout(lambda: setup(), 2000)
