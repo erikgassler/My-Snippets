@@ -21,6 +21,13 @@
 									"file": "${packages}/My Snippets/MySnippets.sublime-settings"
 								},
 								"caption": "Settings – Default"
+							},
+							{
+								"command": "open_file", "args":
+								{
+									"file": "${packages}/User/MySnippets.sublime-settings"
+								},
+								"caption": "Settings – User"
 							}
 						]
 					}
