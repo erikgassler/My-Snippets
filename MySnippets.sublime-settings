@@ -3,10 +3,5 @@
 	// Each folder setting must have a "display" and "path" name|value pair
 	// If path is empty, or if path is not an accessible directory, then that setting will be skipped
 	// Leaving display empty will place directory contents in root menu
-	"folders":[
-		{
-			"display": "",
-			"path": "C:/My Snippets/"
-		}
-	]
+	"folders":[]
 }

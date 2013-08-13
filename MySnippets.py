@@ -103,6 +103,23 @@ class snippetbuilder(threading.Thread):
 # Root path for This Package
 root = sublime.packages_path().replace('\\','/') + '/My Snippets/'
 
+# Make sure user settings file exists
+if not os.path.exists(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings'):
+	subset = open(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings', 'w')
+	subset.write('{'\
+		+ '\n\t// Setup other folders that contain code snippets you want to include in your library'\
+		+ '\n\t// Each folder setting must have a "display" and "path" name|value pair'\
+		+ '\n\t// If path is empty, or if path is not an accessible directory, then that setting will be skipped'\
+		+ '\n\t// Leaving display empty will place directory contents in root menu'\
+		+ '\n\t"folders":['
+		+ '\n\t\t{'\
+		+ '\n\t\t\t"display": "",'\
+		+ '\n\t\t\t"path": ""'\
+		+ '\n\t\t}'\
+		+ '\n\t]'\
+		+ '\n}\n')
+	subset.close()
+
 # Load all of our package settings into an object
 settings = sublime.load_settings('MySnippets.sublime-settings')
 
