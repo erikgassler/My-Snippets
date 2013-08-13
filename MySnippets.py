@@ -36,10 +36,6 @@ def buildsnippets():
 
 	# Create the context submenu based on the current library of snippets
 
-
-	# build menus from local directory
-	#loc = buildfolder(root + "snippets/", '\n\t\t\t')
-
 	# build menus from settings
 	strPaths = ''
 	nt = '\n\t\t\t'
@@ -99,7 +95,6 @@ class mysnippetsCommand(sublime_plugin.TextCommand):
 
 class snippetbuilder(threading.Thread):
 	def __init__(self):
-
 		threading.Thread.__init__(self)
 
 	def run(self):
@@ -111,6 +106,6 @@ root = sublime.packages_path().replace('\\','/') + '/My Snippets/'
 # Load all of our package settings into an object
 settings = sublime.load_settings('MySnippets.sublime-settings')
 
-settings.add_on_change('changed',snippetbuilder)
+settings.add_on_change('changed',buildsnippets)
 
-snippetbuilder()
+buildsnippets()
