@@ -4,17 +4,6 @@ import sublime_plugin
 import threading
 import re
 
-# Root path for This Package
-root = sublime.packages_path().replace('\\','/') + '/My Snippets/'
-
-# Load all of our package settings into an object
-settings = sublime.load_settings('MySnippets.sublime-settings')
-
-# Get folders as paths to sync snippets from
-paths = settings.get("folders")
-
-# Create the context submenu based on the current library of snippets
-
 def buildfolder(path, nt):
 	strReturn = ''
 	strFolder = ''
@@ -41,37 +30,46 @@ def buildfolder(path, nt):
 		strFolder += ','
 	return strFolder + strReturn
 
-# build menus from local directory
-#loc = buildfolder(root + "snippets/", '\n\t\t\t')
+def buildsnippets():
+	# Get folders as paths to sync snippets from
+	paths = settings.get("folders")
 
-# build menus from settings
-strPaths = ''
-nt = '\n\t\t\t'
-for path in paths:
-	if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
-		strTemp = buildfolder(path['path'],nt + '\t\t')
-		if strTemp != '':
-			if strPaths != '':
-				strPaths += ','
-			if 'display' in path and path['display'] != '':
-				strPaths += nt + '{'\
-						 + nt + '\t"caption": "' + path['display'] + '",'\
-						 + nt + '\t"children": ['
-				strPaths += strTemp
-				strPaths += nt + '\t]' + nt + '}'
-			else:
-				strPaths += strTemp
+	# Create the context submenu based on the current library of snippets
 
 
-# build file for context menu
-if strPaths != '':
-	submen = open(root + "Context.sublime-menu", 'w')
-	submen.write('[\n\t{\n\t\t"id":"my-snippets",\n\t\t"caption":"My Snippets",\n\t\t"children":[')
-	submen.write(strPaths)
-	submen.write("\n\t\t]\n\t}\n]\n")
-	submen.close()
-else:
-	print('No snippets found: Context Menu not created.')
+	# build menus from local directory
+	#loc = buildfolder(root + "snippets/", '\n\t\t\t')
+
+	# build menus from settings
+	strPaths = ''
+	nt = '\n\t\t\t'
+	try:
+		for path in paths:
+			if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
+				strTemp = buildfolder(path['path'],nt + '\t\t')
+				if strTemp != '':
+					if strPaths != '':
+						strPaths += ','
+					if 'display' in path and path['display'] != '':
+						strPaths += nt + '{'\
+								 + nt + '\t"caption": "' + path['display'] + '",'\
+								 + nt + '\t"children": ['
+						strPaths += strTemp
+						strPaths += nt + '\t]' + nt + '}'
+					else:
+						strPaths += strTemp
+	except:
+		print('Invalid path')
+
+	# build file for context menu
+	if strPaths != '':
+		submen = open(root + "Context.sublime-menu", 'w')
+		submen.write('[\n\t{\n\t\t"id":"my-snippets",\n\t\t"caption":"My Snippets",\n\t\t"children":[')
+		submen.write(strPaths)
+		submen.write("\n\t\t]\n\t}\n]\n")
+		submen.close()
+	else:
+		print('No snippets found: Context Menu not created.')
 
 # This command gets run from the context menu selections
 class mysnippetsCommand(sublime_plugin.TextCommand):
@@ -99,3 +97,20 @@ class mysnippetsCommand(sublime_plugin.TextCommand):
 
 				self.view.replace(edit, sel, txt)
 
+class snippetbuilder(threading.Thread):
+	def __init__(self):
+
+		threading.Thread.__init__(self)
+
+	def run(self):
+		buildsnippets()
+
+# Root path for This Package
+root = sublime.packages_path().replace('\\','/') + '/My Snippets/'
+
+# Load all of our package settings into an object
+settings = sublime.load_settings('MySnippets.sublime-settings')
+
+settings.add_on_change('changed',snippetbuilder)
+
+snippetbuilder()
