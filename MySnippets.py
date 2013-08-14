@@ -9,9 +9,9 @@ def setup():
 	settings = sublime.load_settings('MySnippets.sublime-settings')
 	settings.add_on_change('changed',buildsnippets)
 	# set 0 to make sure we always start out with an update
-	latestupdates(0)
+	threadbuilder().start()
 
-def buildfolder(path, nt):
+def buildfolder(path, nt, ntt = ''):
 	# Root path for Sublime Text files - .sublime-snippet files must be within this folder or a subfolder of
 	root = sublime.packages_path().replace('\\','/').replace('/Packages','/')
 
@@ -26,7 +26,7 @@ def buildfolder(path, nt):
 			if strTemp != '':
 				if f > 0:
 					strFolder += ','
-				strFolder += nt + '{' + nt + '\t"caption": "' + snip + '",' + nt + '\t"children": ['
+				strFolder += nt + ntt + '{' + nt + '\t"caption": "' + snip + '",' + nt + '\t"children": ['
 				strFolder += strTemp
 				strFolder += nt + '\t]' + nt + '}'
 				f += 1
@@ -85,7 +85,7 @@ def buildsnippets():
 		try:
 			for path in paths:
 				if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
-					strTemp = buildfolder(path['path'],nt + '\t\t')
+					strTemp = buildfolder(path['path'],nt + '')
 					if strTemp != '':
 						if strPaths != '':
 							strPaths += ','
@@ -93,7 +93,7 @@ def buildsnippets():
 							strPaths += nt + '{'\
 									 + nt + '\t"caption": "' + path['display'] + '",'\
 									 + nt + '\t"children": ['
-							strPaths += strTemp
+							strPaths += strTemp.replace('\n','\n\t\t')
 							strPaths += nt + '\t]' + nt + '}'
 						else:
 							strPaths += strTemp
@@ -111,6 +111,9 @@ def buildsnippets():
 			submen.write(strPaths)
 			submen.write("\n\t\t]\n\t}\n]\n")
 			submen.close()
+
+			sublime.run_command('scan_project')
+			sublime.run_command('refresh_folder_list')
 			debug('Snippets Menu Built.')
 		else:
 			debug('No snippets found: Context Menu not created.')
@@ -123,10 +126,11 @@ class mysubsnippetsCommand(sublime_plugin.TextCommand):
 		# Root path for Sublime Text files - .sublime-snippet files must be within this folder or a subfolder of
 		root = sublime.packages_path().replace('\\','/').replace('/Packages','/')
 
-		debug('Attempting running of sublime snippet:' + root + args['snippet'])
+		debug('Looking up path for sublime snippet:' + root + args['snippet'])
 
 		# Make sure file actually exists before trying to run snippet
 		if os.path.isfile(root + args['snippet']):
+			debug('Running sublime snippet:' + args['snippet'])
 			# Insert sublime snippet using sublime's command
 			self.view.run_command('insert_snippet', {"name": args['snippet']})
 
@@ -160,12 +164,12 @@ class mysnippetsCommand(sublime_plugin.TextCommand):
 			sublime.error_message("File not found, has it been deleted?")
 			buildsnippets()
 
-class snippetbuilder(threading.Thread):
+class threadbuilder(threading.Thread):
 	def __init__(self):
 		threading.Thread.__init__(self)
 
 	def run(self):
-		buildsnippets()
+		latestupdates(0)
 
 # This function gets the latest timestamp of files in the users folder paths
 def latestupdates(lastdate):
@@ -220,8 +224,11 @@ def folderdate(path):
 def debug(debugtext):
 	settings = sublime.load_settings('MySnippets.sublime-settings')
 	dbg = settings.get("debug",True)
+	stat = settings.get("status",True)
 	if dbg == True:
 		print(debugtext)
+	elif stat == True:
+		sublime.status_message(debugtext.replace('\n',' | '))
 
-
+# iniiate startup - delaying 2 seconds to allow sublime to get setup
 sublime.set_timeout(lambda: setup(), 2000)

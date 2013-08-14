@@ -4,8 +4,10 @@
 	// If path is empty, or if path is not an accessible directory, then that setting will be skipped
 	// Leaving display empty will place directory contents in root menu
 	"folders":[],
-	// When true debug text is output to the python console after various processes
+	// When true status messages are output to the python console after various processes
 	"debug": true,
+	// Only use when debug is set to false, display status messages in status bar
+	"status": true,
 	// When true folders will be periodically checked to see if any files have been added or updated since menu was built.
 	// If a new or updated file is found the menu will be rebuilt.
 	// Note that deleting a file will not initiate a rebuild.
