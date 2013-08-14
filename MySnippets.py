@@ -40,6 +40,7 @@ def buildfolder(path, nt):
 def buildsnippets():
 	# Root path for This Package
 	root = sublime.packages_path().replace('\\','/') + '/My Snippets/'
+
 	settings = sublime.load_settings('MySnippets.sublime-settings')
 
 	# Make sure user settings file exists
@@ -89,6 +90,10 @@ def buildsnippets():
 
 		# build file for context menu
 		if strPaths != '':
+			# Make sure (Packages)/My Snippets/ folder exists
+			if os.path.isdir(root) == False:
+				os.makedirs(root)
+
 			submen = open(root + "Context.sublime-menu", 'w')
 			submen.write('[\n\t{\n\t\t"id":"my-snippets",\n\t\t"caption":"My Snippets",\n\t\t"children":[')
 			submen.write(strPaths)
@@ -150,14 +155,14 @@ def latestupdates(lastdate):
 
 	chkdate = 0
 
-	debug("Running latest updates: " + str(fsync) + ", " + str(stime) + ", " + str(ldat))
+	debug("Checking for updates:\n\tSync Enabled: " + str(fsync) + "\n\tSync Timeout: " + str(stime) + "\n\tLatest Update at: " + str(ldat))
 
 	if paths != None:
 		try:
 			for path in paths:
 				if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
 					tmpdate = folderdate(path['path'])
-					if tmpdate != '' and (chkdate == '' or tmpdate > chkdate):
+					if tmpdate > 0 and (chkdate == 0 or tmpdate > chkdate):
 						chkdate = tmpdate
 
 		except:
@@ -166,8 +171,8 @@ def latestupdates(lastdate):
 
 	if chkdate > 0 and (ldat == 0 or chkdate > ldat):
 		buildsnippets()
+		debug("My Snippets Updated:\n\tLast Update: " + str(ldat) + '\n\tCurrent Time: ' + str(chkdate))
 		ldat = chkdate
-		debug("My Snippets Updated: " + str(ldat) + ', ' + str(chkdate))
 
 	if fsync == True and stime > 0:
 		sublime.set_timeout(lambda: latestupdates(ldat), stime)
