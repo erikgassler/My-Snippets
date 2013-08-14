@@ -12,6 +12,9 @@ def setup():
 	latestupdates(0)
 
 def buildfolder(path, nt):
+	# Root path for Sublime Text files - .sublime-snippet files must be within this folder or a subfolder of
+	root = sublime.packages_path().replace('\\','/').replace('/Packages','/')
+
 	strReturn = ''
 	strFolder = ''
 	snips = os.listdir(path)
@@ -30,8 +33,17 @@ def buildfolder(path, nt):
 		else:
 			if i > 0:
 				strReturn += ','
+			ext = re.sub('.*?\.','',snip)
+			isrel = path.replace(root,'') != root
+			if isrel == True and ext == 'sublime-snippet':
+				com = 'mysubsnippets'
+				strSnip = path.replace(root,'') + snip
+			else:
+				com = 'mysnippets'
+				strSnip = path + snip
+
 			cap = re.sub('\..*','',snip)
-			strReturn += nt + '{' + nt + '\t"caption": "' + cap + '",' + nt + '\t"command": "mysnippets",' + nt + '\t"args": {' + nt + '\t\t"snippet": "' + path + snip + '"' + nt + '\t}' + nt + '}'
+			strReturn += nt + '{' + nt + '\t"caption": "' + cap + '",' + nt + '\t"command": "' + com + '",' + nt + '\t"args": {' + nt + '\t\t"snippet": "' + strSnip + '"' + nt + '\t}' + nt + '}'
 			i += 1
 	if strFolder != '' and strReturn != '':
 		strFolder += ','
@@ -86,7 +98,7 @@ def buildsnippets():
 						else:
 							strPaths += strTemp
 		except:
-			debug('Invalid path')
+			debug('Invalid path:' + strPaths)
 
 		# build file for context menu
 		if strPaths != '':
@@ -104,6 +116,19 @@ def buildsnippets():
 			debug('No snippets found: Context Menu not created.')
 	else:
 		debug('No "folders" found in settings.')
+
+# This command launches snippet
+class mysubsnippetsCommand(sublime_plugin.TextCommand):
+	def run(self, edit, **args):
+		# Root path for Sublime Text files - .sublime-snippet files must be within this folder or a subfolder of
+		root = sublime.packages_path().replace('\\','/').replace('/Packages','/')
+
+		debug('Attempting running of sublime snippet:' + root + args['snippet'])
+
+		# Make sure file actually exists before trying to run snippet
+		if os.path.isfile(root + args['snippet']):
+			# Insert sublime snippet using sublime's command
+			self.view.run_command('insert_snippet', {"name": args['snippet']})
 
 # This command gets run from the context menu selections
 class mysnippetsCommand(sublime_plugin.TextCommand):
