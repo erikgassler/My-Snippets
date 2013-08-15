@@ -140,7 +140,7 @@ class mysnippetsCommand(sublime_plugin.TextCommand):
 		sels = self.view.sel()
 
 		# Open the file dicated by args['snippet']
-		if os.path.isfile(args['snippet']):
+		if 'snippet' in args and os.path.isfile(args['snippet']):
 			with open(args['snippet']) as snippet:
 				for sel in sels:
 
@@ -164,6 +164,7 @@ class mysnippetsCommand(sublime_plugin.TextCommand):
 			sublime.error_message("File not found, has it been deleted?")
 			buildsnippets()
 
+# This async threading function runs the update for building the context menu
 class threadbuilder(threading.Thread):
 	def __init__(self):
 		threading.Thread.__init__(self)
