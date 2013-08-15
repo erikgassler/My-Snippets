@@ -141,6 +141,13 @@ class mysnippetsCommand(sublime_plugin.TextCommand):
 
 		# Open the file dicated by args['snippet']
 		if 'snippet' in args and os.path.isfile(args['snippet']):
+
+			path = self.view.file_name()
+			if path == None:
+				path = ''
+			path = path.replace('\\','/')
+			fylname = re.sub('.*\/','',path)
+
 			with open(args['snippet']) as snippet:
 				for sel in sels:
 
@@ -159,7 +166,10 @@ class mysnippetsCommand(sublime_plugin.TextCommand):
 
 					snippet.seek(0)
 
-					self.view.replace(edit, sel, txt)
+					rep = self.view.substr(sel)
+					stxt = txt.replace('$SELECTION',rep).replace('$TM_FILENAME',fylname).replace('$TM_FILEPATH',path)
+
+					self.view.replace(edit, sel, stxt)
 		else:
 			sublime.error_message("File not found, has it been deleted?")
 			buildsnippets()
