@@ -21,3 +21,12 @@ These are powerful snippets for quickly adding and editing code templates. For u
 See http://docs.sublimetext.info/en/latest/reference/snippets.html for documentation on creating these snippets.
 
 The 2nd type of snippet is simpler. Each file must contain the exact code you want used for your snippet. While the features of using this type of snippet is less robust, they can be stored and pulled from any valid file path, such as a mapped network drive to a shared code repository.
+
+Environment Variables:
+Environment variables can be used in your snippets for extra functionality.
+
+$SELECTION - Replaced with selected text if any.
+
+$TM_FILENAME - The name of the current file being edited including extension.
+
+$TM_FILEPATH - The full file path of the current file being edited.
