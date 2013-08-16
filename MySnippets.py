@@ -4,6 +4,7 @@ import sublime_plugin
 import threading
 import re
 
+# run initial setup - called at bottom of file
 def setup():
 	# Load all of our package settings into a global object
 	settings = sublime.load_settings('MySnippets.sublime-settings')
@@ -11,6 +12,7 @@ def setup():
 	# set 0 to make sure we always start out with an update
 	threadbuilder().start()
 
+# this builds json content for a folder and it's files, calling upon itself for subfolders - used in tbuildsnippets
 def buildfolder(path, nt, ntt = ''):
 	# Root path for Sublime Text files - .sublime-snippet files must be within this folder or a subfolder of
 	root = sublime.packages_path().replace('\\','/').replace('/Packages','/')
@@ -37,7 +39,7 @@ def buildfolder(path, nt, ntt = ''):
 			isrel = path.replace(root,'') != root
 			if isrel == True and ext == 'sublime-snippet':
 				com = 'mysubsnippets'
-				strSnip = path.replace(root,'') + snip
+				strSnip = path + snip
 			else:
 				com = 'mysnippets'
 				strSnip = path + snip
@@ -49,127 +51,115 @@ def buildfolder(path, nt, ntt = ''):
 		strFolder += ','
 	return strFolder + strReturn
 
-def buildsnippets():
-	# Root path for This Package
-	root = sublime.packages_path().replace('\\','/') + '/My Snippets/'
+# threading class for buildsnippets
+class tbuildsnippets(threading.Thread):
+	def __init__(self):
+		threading.Thread.__init__(self)
 
-	settings = sublime.load_settings('MySnippets.sublime-settings')
+	def run(self):
+		# Root path for This Package
+		root = sublime.packages_path().replace('\\','/') + '/My Snippets/'
 
-	# Make sure user settings file exists
-	if os.path.exists(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings') == False:
-		debug("Creating: " + sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings')
-		subset = open(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings', 'w')
-		subset.write('{'\
-			+ '\n\t// Setup other folders that contain code snippets you want to include in your library'\
-			+ '\n\t// Each folder setting must have a "display" and "path" name|value pair'\
-			+ '\n\t// If path is empty, or if path is not an accessible directory, then that setting will be skipped'\
-			+ '\n\t// Leaving display empty will place directory contents in root menu'\
-			+ '\n\t"folders":['
-			+ '\n\t\t{'\
-			+ '\n\t\t\t"display": "",'\
-			+ '\n\t\t\t"path": ""'\
-			+ '\n\t\t}'\
-			+ '\n\t]'\
-			+ '\n}\n')
-		subset.close()
+		settings = sublime.load_settings('MySnippets.sublime-settings')
 
-	# Get folders as paths to sync snippets from
-	paths = settings.get("folders")
+		# Make sure user settings file exists
+		if os.path.exists(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings') == False:
+			debug("Creating: " + sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings')
+			subset = open(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings', 'w')
+			subset.write('{'\
+				+ '\n\t// Setup other folders that contain code snippets you want to include in your library'\
+				+ '\n\t// Each folder setting must have a "display" and "path" name|value pair'\
+				+ '\n\t// If path is empty, or if path is not an accessible directory, then that setting will be skipped'\
+				+ '\n\t// Leaving display empty will place directory contents in root menu'\
+				+ '\n\t"folders":['
+				+ '\n\t\t{'\
+				+ '\n\t\t\t"display": "",'\
+				+ '\n\t\t\t"path": ""'\
+				+ '\n\t\t}'\
+				+ '\n\t]'\
+				+ '\n}\n')
+			subset.close()
 
-	# Create the context submenu based on the current library of snippets
+		# Get folders as paths to sync snippets from
+		paths = settings.get("folders")
 
-	# build menus from settings
-	if paths != None:
-		strPaths = ''
-		nt = '\n\t\t\t'
-		try:
-			for path in paths:
-				if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
-					strTemp = buildfolder(path['path'],nt + '')
-					if strTemp != '':
-						if strPaths != '':
-							strPaths += ','
-						if 'display' in path and path['display'] != '':
-							strPaths += nt + '{'\
-									 + nt + '\t"caption": "' + path['display'] + '",'\
-									 + nt + '\t"children": ['
-							strPaths += strTemp.replace('\n','\n\t\t')
-							strPaths += nt + '\t]' + nt + '}'
-						else:
-							strPaths += strTemp
-		except:
-			debug('Invalid path:' + strPaths)
+		# Create the context submenu based on the current library of snippets
 
-		# build file for context menu
-		if strPaths != '':
-			# Make sure (Packages)/My Snippets/ folder exists
-			if os.path.isdir(root) == False:
-				os.makedirs(root)
+		# build menus from settings
+		if paths != None:
+			strPaths = ''
+			nt = '\n\t\t\t'
+			try:
+				for path in paths:
+					if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
+						strTemp = buildfolder(path['path'],nt + '')
+						if strTemp != '':
+							if strPaths != '':
+								strPaths += ','
+							if 'display' in path and path['display'] != '':
+								strPaths += nt + '{'\
+										 + nt + '\t"caption": "' + path['display'] + '",'\
+										 + nt + '\t"children": ['
+								strPaths += strTemp.replace('\n','\n\t\t')
+								strPaths += nt + '\t]' + nt + '}'
+							else:
+								strPaths += strTemp
+			except:
+				debug('Invalid path:' + strPaths)
 
-			submen = open(root + "Context.sublime-menu", 'w')
-			submen.write('[\n\t{\n\t\t"id":"my-snippets",\n\t\t"caption":"My Snippets",\n\t\t"children":[')
-			submen.write(strPaths)
-			submen.write("\n\t\t]\n\t}\n]\n")
-			submen.close()
+			# build file for context menu
+			if strPaths != '':
+				# Make sure (Packages)/My Snippets/ folder exists
+				if os.path.isdir(root) == False:
+					os.makedirs(root)
 
-			sublime.run_command('scan_project')
-			sublime.run_command('refresh_folder_list')
-			debug('Snippets Menu Built.')
+				submen = open(root + "Context.sublime-menu", 'w')
+				submen.write('[\n\t{\n\t\t"id":"my-snippets",\n\t\t"caption":"My Snippets",\n\t\t"children":[')
+				submen.write(strPaths)
+				submen.write("\n\t\t]\n\t}\n]\n")
+				submen.close()
+
+				sublime.run_command('scan_project')
+				sublime.run_command('refresh_folder_list')
+				debug('Snippets Menu Built.')
+			else:
+				debug('No snippets found: Context Menu not created.')
 		else:
-			debug('No snippets found: Context Menu not created.')
-	else:
-		debug('No "folders" found in settings.')
+			debug('No "folders" found in settings.')
+
+# this function handles building the My Snippets context menu
+def buildsnippets():
+	tbuildsnippets().start()
 
 # This command launches snippet
 class mysubsnippetsCommand(sublime_plugin.TextCommand):
 	def run(self, edit, **args):
-		# Root path for Sublime Text files - .sublime-snippet files must be within this folder or a subfolder of
-		root = sublime.packages_path().replace('\\','/').replace('/Packages','/')
-
-		debug('Looking up path for sublime snippet:' + root + args['snippet'])
-
 		# Make sure file actually exists before trying to run snippet
-		if os.path.isfile(root + args['snippet']):
-			debug('Running sublime snippet:' + args['snippet'])
-			# Insert sublime snippet using sublime's command
-			self.view.run_command('insert_snippet', {"name": args['snippet']})
+		if 'snippet' in args and os.path.isfile(args['snippet']):
+			with open(args['snippet']) as snippet:
+				txt = ''
+				for line in snippet:
+					txt += line
+				txt = txt.replace('\n','\\n')
+				txt = re.sub('.*\<\!\[CDATA\[|\]\]\>.*','',txt)
+				txt = txt.replace('\\n','\n')
+				self.view.run_command('insert_snippet', {"contents": txt})
+
+		else:
+			sublime.error_message("File not found, has it been deleted?")
+			buildsnippets()
 
 # This command gets run from the context menu selections
 class mysnippetsCommand(sublime_plugin.TextCommand):
 	def run(self, edit, **args):
-		sels = self.view.sel()
-
 		# Open the file dicated by args['snippet']
 		if 'snippet' in args and os.path.isfile(args['snippet']):
-
-			path = self.view.file_name()
-			if path == None:
-				path = ''
-			path = path.replace('\\','/')
-			fylname = re.sub('.*\/','',path)
-
 			with open(args['snippet']) as snippet:
-				for sel in sels:
+				txt = ''
+				for line in snippet:
+					txt += line
+				self.view.run_command('insert_snippet', {"contents": txt})
 
-					# Determine the indent of the text
-					(row, col) = self.view.rowcol(sel.begin())
-					indent_region = self.view.find('^\s+', self.view.text_point(row, 0))
-					if indent_region and self.view.rowcol(indent_region.begin())[0] == row:
-						indent = self.view.substr(indent_region).replace('\n','')
-					else:
-						indent = ''
-					txt = ''
-					i = 0
-					for line in snippet:
-						txt += (indent if i > 0 else '') + line
-						i += 1
-
-					snippet.seek(0)
-
-					rep = self.view.substr(sel)
-					stxt = txt.replace('$SELECTION',rep).replace('$TM_FILENAME',fylname).replace('$TM_FILEPATH',path)
-
-					self.view.replace(edit, sel, stxt)
 		else:
 			sublime.error_message("File not found, has it been deleted?")
 			buildsnippets()
@@ -208,7 +198,6 @@ def latestupdates(lastdate):
 		except:
 			debug('My Snippets Error: Error checking paths for updated files.')
 
-
 	if chkdate > 0 and (ldat == 0 or chkdate > ldat):
 		buildsnippets()
 		debug("My Snippets Updated:\n\tLast Update: " + str(ldat) + '\n\tCurrent Time: ' + str(chkdate))
@@ -217,6 +206,7 @@ def latestupdates(lastdate):
 	if fsync == True and stime > 0:
 		sublime.set_timeout(lambda: latestupdates(ldat), stime)
 
+# this function checks for the latest date of all files within - calls itself for subfolders
 def folderdate(path):
 	chkdate = 0
 	snips = os.listdir(path)
@@ -232,6 +222,7 @@ def folderdate(path):
 
 	return chkdate
 
+# handle output of debug text, sending to console or status bar depending on settings
 def debug(debugtext):
 	settings = sublime.load_settings('MySnippets.sublime-settings')
 	dbg = settings.get("debug",True)
