@@ -5,11 +5,13 @@ import threading
 import re
 
 settings = {}
+subsets = {}
 
 # run initial setup - called at bottom of file
 def setup():
 	# Load all of our package settings into a global object
 	settings = sublime.load_settings('MySnippets.sublime-settings')
+	subsets = sublime.load_settings('Preferences.sublime-settings')
 	settings.add_on_change('changed',buildsnippets)
 	buildsnippets()
 	# set 0 to make sure we always start out with an update
@@ -19,8 +21,6 @@ def setup():
 def buildfolder(path, nt, ntt = ''):
 	# Root path for Sublime Text files - .sublime-snippet files must be within this folder or a subfolder of
 	root = sublime.packages_path().replace('\\','/').replace('/Packages','/')
-	settings = sublime.load_settings('MySnippets.sublime-settings')
-	subsets = sublime.load_settings('Preferences.sublime-settings')
 	ignorfyl = settings.get("ignore",[])
 	for s in subsets.get("binary_file_patterns",[]):
 		ignorfyl.append(s)
@@ -80,8 +80,6 @@ class tbuildsnippets(threading.Thread):
 	def run(self):
 		# Root path for This Package
 		root = sublime.packages_path().replace('\\','/') + '/My Snippets/'
-
-		settings = sublime.load_settings('MySnippets.sublime-settings')
 
 		# Make sure user settings file exists
 		if os.path.exists(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings') == False:
@@ -156,6 +154,7 @@ class tbuildsnippets(threading.Thread):
 # this function handles building the My Snippets context menu
 def buildsnippets():
 	settings = sublime.load_settings('MySnippets.sublime-settings')
+	subsets = sublime.load_settings('Preferences.sublime-settings')
 	tbuildsnippets().start()
 
 # This command launches snippet
