@@ -136,6 +136,7 @@ class mysubsnippetsCommand(sublime_plugin.TextCommand):
 	def run(self, edit, **args):
 		# Make sure file actually exists before trying to run snippet
 		if 'snippet' in args and os.path.isfile(args['snippet']):
+			debug("Requested Snippet(1): " + args['snippet'])
 			with open(args['snippet']) as snippet:
 				txt = ''
 				for line in snippet:
@@ -143,6 +144,7 @@ class mysubsnippetsCommand(sublime_plugin.TextCommand):
 				txt = txt.replace('\n','\\n')
 				txt = re.sub('.*\<\!\[CDATA\[|\]\]\>.*','',txt)
 				txt = txt.replace('\\n','\n')
+				debug("Running Snippet: " + txt)
 				self.view.run_command('insert_snippet', {"contents": txt})
 
 		else:
@@ -154,11 +156,14 @@ class mysnippetsCommand(sublime_plugin.TextCommand):
 	def run(self, edit, **args):
 		# Open the file dicated by args['snippet']
 		if 'snippet' in args and os.path.isfile(args['snippet']):
+			debug("Requested Snippet(2): " + args['snippet'])
 			with open(args['snippet']) as snippet:
 				txt = ''
 				for line in snippet:
 					txt += line
+				debug("Running Snippet: " + txt)
 				self.view.run_command('insert_snippet', {"contents": txt})
+				debug('Snippet Ran')
 
 		else:
 			sublime.error_message("File not found, has it been deleted?")
@@ -205,6 +210,8 @@ def latestupdates(lastdate):
 
 	if fsync == True and stime > 0:
 		sublime.set_timeout(lambda: latestupdates(ldat), stime)
+		return
+	return
 
 # this function checks for the latest date of all files within - calls itself for subfolders
 def folderdate(path):
