@@ -16,5 +16,9 @@
 	// Note that deleting a file will not initiate a rebuild.
 	"livesync": true,
 	// Used when livesync is enabled, how long to wait between updates - Time is in MILLISECONDS
-	"syncewait": 60000
+	"syncewait": 60000,
+	// File patterns to ignore
+	"ignore":["*.gitignore","*.project","settings.xml"],
+	// Exclude any subfolders with these names
+	"folder_exclude":[".svn",".git",".hg","CVS"]
 }

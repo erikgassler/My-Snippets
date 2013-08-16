@@ -16,7 +16,14 @@ def setup():
 def buildfolder(path, nt, ntt = ''):
 	# Root path for Sublime Text files - .sublime-snippet files must be within this folder or a subfolder of
 	root = sublime.packages_path().replace('\\','/').replace('/Packages','/')
-
+	settings = sublime.load_settings('MySnippets.sublime-settings')
+	subsets = sublime.load_settings('Preferences.sublime-settings')
+	ignorfyl = settings.get("ignore",[])
+	for s in subsets.get("binary_file_patterns",[]):
+		ignorfyl.append(s)
+	for s in subsets.get("file_exclude_patterns",[]):
+		ignorfyl.append(s)
+	ignorfld = settings.get("folder_exclude",[])
 	strReturn = ''
 	strFolder = ''
 	snips = os.listdir(path)
@@ -24,29 +31,40 @@ def buildfolder(path, nt, ntt = ''):
 	f = 0
 	for snip in snips:
 		if os.path.isdir(path + snip):
-			strTemp = buildfolder(path + snip + '/', nt + '\t\t')
-			if strTemp != '':
-				if f > 0:
-					strFolder += ','
-				strFolder += nt + ntt + '{' + nt + '\t"caption": "' + snip + '",' + nt + '\t"children": ['
-				strFolder += strTemp
-				strFolder += nt + '\t]' + nt + '}'
-				f += 1
+			if not snip in ignorfld:
+				strTemp = buildfolder(path + snip + '/', nt + '\t\t')
+				if strTemp != '':
+					if f > 0:
+						strFolder += ','
+					strFolder += nt + ntt + '{' + nt + '\t"caption": "' + snip + '",' + nt + '\t"children": ['
+					strFolder += strTemp
+					strFolder += nt + '\t]' + nt + '}'
+					f += 1
 		else:
-			if i > 0:
-				strReturn += ','
-			ext = re.sub('.*?\.','',snip)
-			isrel = path.replace(root,'') != root
-			if isrel == True and ext == 'sublime-snippet':
-				com = 'mysubsnippets'
-				strSnip = path + snip
+			incfyl = True
+			if snip in ignorfyl:
+				incfyl = False
 			else:
-				com = 'mysnippets'
-				strSnip = path + snip
+				for pat in ignorfyl:
+					regex = pat.replace('.','\.').replace('*','.*')
+					if re.match(regex, snip, flags=re.I) != None:
+						incfyl = False
+						break
+			if incfyl:
+				if i > 0:
+					strReturn += ','
+				ext = re.sub('.*?\.','',snip)
+				isrel = path.replace(root,'') != root
+				if isrel == True and ext == 'sublime-snippet':
+					com = 'mysubsnippets'
+					strSnip = path + snip
+				else:
+					com = 'mysnippets'
+					strSnip = path + snip
 
-			cap = re.sub('\..*','',snip)
-			strReturn += nt + '{' + nt + '\t"caption": "' + cap + '",' + nt + '\t"command": "' + com + '",' + nt + '\t"args": {' + nt + '\t\t"snippet": "' + strSnip + '"' + nt + '\t}' + nt + '}'
-			i += 1
+				cap = re.sub('\..*','',snip)
+				strReturn += nt + '{' + nt + '\t"caption": "' + cap + '",' + nt + '\t"command": "' + com + '",' + nt + '\t"args": {' + nt + '\t\t"snippet": "' + strSnip + '"' + nt + '\t}' + nt + '}'
+				i += 1
 	if strFolder != '' and strReturn != '':
 		strFolder += ','
 	return strFolder + strReturn
@@ -113,15 +131,20 @@ class tbuildsnippets(threading.Thread):
 				if os.path.isdir(root) == False:
 					os.makedirs(root)
 
-				submen = open(root + "Context.sublime-menu", 'w')
-				submen.write('[\n\t{\n\t\t"id":"my-snippets",\n\t\t"caption":"My Snippets",\n\t\t"children":[')
-				submen.write(strPaths)
-				submen.write("\n\t\t]\n\t}\n]\n")
-				submen.close()
+				try:
+					submen = open(root + "Context.sublime-menu", 'w')
+					submen.write('[\n\t{\n\t\t"id":"my-snippets",\n\t\t"caption":"My Snippets",\n\t\t"children":[')
+					submen.write(strPaths)
+					submen.write("\n\t\t]\n\t}\n]\n")
+					submen.close()
 
-				sublime.run_command('scan_project')
-				sublime.run_command('refresh_folder_list')
-				debug('Snippets Menu Built.')
+
+					sublime.run_command('scan_project')
+					sublime.run_command('refresh_folder_list')
+					debug('Snippets Menu Built.')
+				except:
+					debug('Failed opening or writing to Context file.')
+					sublime.set_timeout(lambda: buildsnippets(), 1000)
 			else:
 				debug('No snippets found: Context Menu not created.')
 		else:
@@ -141,9 +164,7 @@ class mysubsnippetsCommand(sublime_plugin.TextCommand):
 				txt = ''
 				for line in snippet:
 					txt += line
-				txt = txt.replace('\n','\\n')
-				txt = re.sub('.*\<\!\[CDATA\[|\]\]\>.*','',txt)
-				txt = txt.replace('\\n','\n')
+				txt = re.sub('.*\<\!\[CDATA\[|\]\]\>.*','',txt,flags=re.S|re.I)
 				debug("Running Snippet: " + txt)
 				self.view.run_command('insert_snippet', {"contents": txt})
 

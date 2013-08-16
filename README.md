@@ -18,3 +18,5 @@ For normal sublime snippets - with extension .sublime-snippet - follow normal ru
 See http://docs.sublimetext.info/en/latest/reference/snippets.html for documentation on creating these snippets.
 
 My Snippets also allows snippets with any other file extension. When using file extensions other than .sublime-snippet include only your exact snippet content in the file. Do not wrap your snippet with any XML. You can however use all environment variables - IE. $SELECTION, $1, etc - that you would use in a normal snippet.
+
+My Snippets automatically excludes files from "binary_file_patterns" and "file_exclude_patterns" found in your Preferences.sublime-settings settings.
