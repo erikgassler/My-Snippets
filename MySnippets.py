@@ -10,6 +10,8 @@ subsets = {}
 # run initial setup - called at bottom of file
 def setup():
 	# Load all of our package settings into a global object
+	global settings
+	global subsets
 	settings = sublime.load_settings('MySnippets.sublime-settings')
 	subsets = sublime.load_settings('Preferences.sublime-settings')
 	settings.add_on_change('changed',buildsnippets)
@@ -19,20 +21,26 @@ def setup():
 
 # this builds json content for a folder and it's files, calling upon itself for subfolders - used in tbuildsnippets
 def buildfolder(path, nt, ntt = ''):
+	global settings
+	global subsets
+	strReturn = ''
+	strFolder = ''
 	# Root path for Sublime Text files - .sublime-snippet files must be within this folder or a subfolder of
-	root = sublime.packages_path().replace('\\','/').replace('/Packages','/')
 	ignorfyl = settings.get("ignore",[])
 	for s in subsets.get("binary_file_patterns",[]):
 		ignorfyl.append(s)
 	for s in subsets.get("file_exclude_patterns",[]):
 		ignorfyl.append(s)
 	ignorfld = settings.get("folder_exclude",[])
-	strReturn = ''
-	strFolder = ''
+
 	snips = os.listdir(path)
+
 	i = 0
 	f = 0
+	if not path[-1] == '/':
+		path += '/'
 	for snip in snips:
+
 		if os.path.isdir(path + snip):
 			if not snip in ignorfld:
 				strTemp = buildfolder(path + snip + '/', nt + '\t\t')
@@ -57,8 +65,7 @@ def buildfolder(path, nt, ntt = ''):
 				if i > 0:
 					strReturn += ','
 				ext = re.sub('.*?\.','',snip)
-				isrel = path.replace(root,'') != root
-				if isrel == True and ext == 'sublime-snippet':
+				if ext == 'sublime-snippet':
 					com = 'mysubsnippets'
 					strSnip = path + snip
 				else:
@@ -68,8 +75,10 @@ def buildfolder(path, nt, ntt = ''):
 				cap = re.sub('\..*','',snip)
 				strReturn += nt + '{' + nt + '\t"caption": "' + cap + '",' + nt + '\t"command": "' + com + '",' + nt + '\t"args": {' + nt + '\t\t"snippet": "' + strSnip + '"' + nt + '\t}' + nt + '}'
 				i += 1
+
 	if strFolder != '' and strReturn != '':
 		strFolder += ','
+
 	return strFolder + strReturn
 
 # threading class for buildsnippets
@@ -78,6 +87,8 @@ class tbuildsnippets(threading.Thread):
 		threading.Thread.__init__(self)
 
 	def run(self):
+		global settings
+
 		# Root path for This Package
 		root = sublime.packages_path().replace('\\','/') + '/My Snippets/'
 
@@ -101,30 +112,27 @@ class tbuildsnippets(threading.Thread):
 
 		# Get folders as paths to sync snippets from
 		paths = settings.get("folders")
-
 		# Create the context submenu based on the current library of snippets
 
 		# build menus from settings
 		if paths != None:
 			strPaths = ''
 			nt = '\n\t\t\t'
-			try:
-				for path in paths:
-					if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
-						strTemp = buildfolder(path['path'],nt + '')
-						if strTemp != '':
-							if strPaths != '':
-								strPaths += ','
-							if 'display' in path and path['display'] != '':
-								strPaths += nt + '{'\
-										 + nt + '\t"caption": "' + path['display'] + '",'\
-										 + nt + '\t"children": ['
-								strPaths += strTemp.replace('\n','\n\t\t')
-								strPaths += nt + '\t]' + nt + '}'
-							else:
-								strPaths += strTemp
-			except:
-				debug('Invalid path:' + strPaths)
+			for path in paths:
+				if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
+
+					strTemp = buildfolder(path['path'],nt + '')
+					if strTemp != '':
+						if strPaths != '':
+							strPaths += ','
+						if 'display' in path and path['display'] != '':
+							strPaths += nt + '{'\
+									 + nt + '\t"caption": "' + path['display'] + '",'\
+									 + nt + '\t"children": ['
+							strPaths += strTemp.replace('\n','\n\t\t')
+							strPaths += nt + '\t]' + nt + '}'
+						else:
+							strPaths += strTemp
 
 			# build file for context menu
 			if strPaths != '':
@@ -153,6 +161,8 @@ class tbuildsnippets(threading.Thread):
 
 # this function handles building the My Snippets context menu
 def buildsnippets():
+	global settings
+	global subsets
 	settings = sublime.load_settings('MySnippets.sublime-settings')
 	subsets = sublime.load_settings('Preferences.sublime-settings')
 	tbuildsnippets().start()
@@ -204,6 +214,7 @@ class threadbuilder(threading.Thread):
 # This function gets the latest timestamp of files in the users folder paths
 def latestupdates(lastdate):
 	ldat = lastdate
+	global settings
 
 	# Get folders as paths to sync snippets from
 	paths = settings.get("folders")
@@ -213,19 +224,30 @@ def latestupdates(lastdate):
 
 	chkdate = 0
 
-	debug("Checking for updates:\n\tSync Enabled: " + str(fsync) + "\n\tSync Timeout: " + str(stime) + "\n\tLatest Update at: " + str(ldat))
+	debug("Checking for updates:\n\tSync Enabled: " + str(fsync)\
+		+ "\n\tSync Timeout: " + str(stime)\
+		+ "\n\tLatest Update at: " + str(ldat)\
+		+ "\n\tPaths: " + str(paths)\
+		)
 
 	if paths != None:
 		try:
 			for path in paths:
 				if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
+					if path['path'][-1] != '/':
+						path['path'] += '/'
+					debug(path['path'])
 					tmpdate = folderdate(path['path'])
+					debug(str(tmpdate))
 					if tmpdate > 0 and (chkdate == 0 or tmpdate > chkdate):
 						chkdate = tmpdate
 
 		except:
 			debug('My Snippets Error: Error checking paths for updated files.')
 
+	debug("Check:" + str(chkdate)\
+			+ "\nLast:" + str(ldat)\
+			)
 	if chkdate > 0 and (ldat == 0 or chkdate > ldat):
 		buildsnippets()
 		debug("My Snippets Updated:\n\tLast Update: " + str(ldat) + '\n\tCurrent Time: ' + str(chkdate))
@@ -239,6 +261,8 @@ def latestupdates(lastdate):
 # this function checks for the latest date of all files within - calls itself for subfolders
 def folderdate(path):
 	chkdate = 0
+	if path[-1] != '/':
+		path += '/'
 	snips = os.listdir(path)
 	for snip in snips:
 		if os.path.isdir(path + snip):
@@ -254,6 +278,7 @@ def folderdate(path):
 
 # handle output of debug text, sending to console or status bar depending on settings
 def debug(debugtext):
+	global settings
 	dbg = settings.get("debug",True)
 	stat = settings.get("status",True)
 	if dbg == True:
