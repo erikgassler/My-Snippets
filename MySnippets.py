@@ -4,11 +4,14 @@ import sublime_plugin
 import threading
 import re
 
+settings = {}
+
 # run initial setup - called at bottom of file
 def setup():
 	# Load all of our package settings into a global object
 	settings = sublime.load_settings('MySnippets.sublime-settings')
 	settings.add_on_change('changed',buildsnippets)
+	buildsnippets()
 	# set 0 to make sure we always start out with an update
 	threadbuilder().start()
 
@@ -152,6 +155,7 @@ class tbuildsnippets(threading.Thread):
 
 # this function handles building the My Snippets context menu
 def buildsnippets():
+	settings = sublime.load_settings('MySnippets.sublime-settings')
 	tbuildsnippets().start()
 
 # This command launches snippet
@@ -200,7 +204,6 @@ class threadbuilder(threading.Thread):
 
 # This function gets the latest timestamp of files in the users folder paths
 def latestupdates(lastdate):
-	settings = sublime.load_settings('MySnippets.sublime-settings')
 	ldat = lastdate
 
 	# Get folders as paths to sync snippets from
@@ -252,7 +255,6 @@ def folderdate(path):
 
 # handle output of debug text, sending to console or status bar depending on settings
 def debug(debugtext):
-	settings = sublime.load_settings('MySnippets.sublime-settings')
 	dbg = settings.get("debug",True)
 	stat = settings.get("status",True)
 	if dbg == True:
@@ -261,4 +263,4 @@ def debug(debugtext):
 		sublime.status_message(debugtext.replace('\n',' | '))
 
 # iniiate startup - delaying 2 seconds to allow sublime to get setup
-sublime.set_timeout(lambda: setup(), 2000)
+sublime.set_timeout(lambda: setup(), 4000)
