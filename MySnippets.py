@@ -3,43 +3,57 @@ import sublime
 import sublime_plugin
 import threading
 import re
+import time
+from threading import Lock
+from threading import Timer
+lock = Lock()
 
-settings = {}
+threads = { "bs":None, "bt":None }
 
 # run initial setup - called at bottom of file
 def setup():
-	# Make sure user settings file exists
-	if os.path.exists(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings') == False:
-		debug("Creating: " + sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings')
-		with open(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings', 'w') as subset:
-			subset.write('{'\
-				+ '\n\t// Setup other folders that contain code snippets you want to include in your library'\
-				+ '\n\t// Each folder setting must have a "display" and "path" name|value pair'\
-				+ '\n\t// If path is empty, or if path is not an accessible directory, then that setting will be skipped'\
-				+ '\n\t// Leaving display empty will place directory contents in root menu'\
-				+ '\n\t"folders":['
-				+ '\n\t\t{'\
-				+ '\n\t\t\t"display": "",'\
-				+ '\n\t\t\t"path": ""'\
-				+ '\n\t\t}'\
-				+ '\n\t]'\
-				+ '\n}\n')
 	# Load all of our package settings into a global object
+	settings = sublime.load_settings('MySnippets.sublime-settings')
+	subsets = sublime.load_settings('Preferences.sublime-settings')
+	settings.add_on_change('changed',settingschanged)
+	subsets.add_on_change('changed',settingschanged)
 	buildsettings()
-	se = sublime.load_settings('MySnippets.sublime-settings')
-	se.add_on_change('changed',buildsnippets)
 	buildsnippets()
-	# set 0 to make sure we always start out with an update
-	threadbuilder().start()
+	buildthreads()
+
+def settingschanged():
+	buildsettings()
+	buildsnippets()
+	buildthreads()
+
+glob_settings = {}
+
+# returns settings object built from settings file
+def buildsettings():
+	global glob_settings
+	# load_settings must be called on main thread
+	if threading.current_thread().name == 'MainThread':
+		fset = sublime.load_settings('MySnippets.sublime-settings')
+		fsub = sublime.load_settings('Preferences.sublime-settings')
+		glob_settings['ignore'] = fset.get('ignore',[])
+		for s in fsub.get("binary_file_patterns",[]):
+			glob_settings['ignore'].append(s)
+		for s in fsub.get("file_exclude_patterns",[]):
+			glob_settings['ignore'].append(s)
+		glob_settings['folder_exclude'] = fset.get('folder_exclude',[])
+		glob_settings['folders'] = fset.get('folders',[])
+		glob_settings['livesync'] = fset.get('livesync',True)
+		glob_settings['syncewait'] = fset.get('syncewait',10 * 60 * 1000)
+	return glob_settings
 
 # this builds json content for a folder and it's files, calling upon itself for subfolders - used in tbuildsnippets
 def buildfolder(path, nt, ntt = ''):
-	global settings
+	settings = buildsettings()
 	strReturn = ''
 	strFolder = ''
 	# Root path for Sublime Text files - .sublime-snippet files must be within this folder or a subfolder of
-	ignorfyl = settings["ignore"]
-	ignorfld = settings["folder_exclude"]
+	ignorfyl = settings.get("ignore",[])
+	ignorfld = settings.get("folder_exclude",[])
 
 	snips = os.listdir(path)
 
@@ -95,13 +109,32 @@ class tbuildsnippets(threading.Thread):
 		threading.Thread.__init__(self)
 
 	def run(self):
-		global settings
+		settings = buildsettings()
+
+		# Get folders as paths to sync snippets from
+		paths = settings.get("folders",[])
+
+		# Make sure user settings file exists
+		if os.path.exists(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings') == False:
+			debug("Creating: " + sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings')
+			subset = open(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings', 'w')
+			subset.write('{'\
+				+ '\n\t// Setup other folders that contain code snippets you want to include in your library'\
+				+ '\n\t// Each folder setting must have a "display" and "path" name|value pair'\
+				+ '\n\t// If path is empty, or if path is not an accessible directory, then that setting will be skipped'\
+				+ '\n\t// Leaving display empty will place directory contents in root menu'\
+				+ '\n\t"folders":['
+				+ '\n\t\t{'\
+				+ '\n\t\t\t"display": "",'\
+				+ '\n\t\t\t"path": ""'\
+				+ '\n\t\t}'\
+				+ '\n\t]'\
+				+ '\n}\n')
+			subset.close()
 
 		# Root path for This Package
 		root = sublime.packages_path().replace('\\','/') + '/My Snippets/'
 
-		# Get folders as paths to sync snippets from
-		paths = settings.get("folders",[])
 		# Create the context submenu based on the current library of snippets
 
 		# build menus from settings
@@ -135,7 +168,7 @@ class tbuildsnippets(threading.Thread):
 						submen.write('[\n\t{\n\t\t"id":"my-snippets",\n\t\t"caption":"My Snippets",\n\t\t"children":[')
 						submen.write(strPaths)
 						submen.write("\n\t\t]\n\t}\n]\n")
-						submen.close()
+
 					debug('Snippets Menu Built.')
 				except:
 					debug('Failed opening or writing to Context file.')
@@ -144,33 +177,21 @@ class tbuildsnippets(threading.Thread):
 				debug('No snippets found: Context Menu not created.')
 		else:
 			debug('No "folders" found in settings.')
+		return
 
-def buildsettings():
-	global settings
-	try:
-		se = sublime.load_settings('MySnippets.sublime-settings')
-		subsets = sublime.load_settings('Preferences.sublime-settings')
-		settings = {}
-		settings['ignore'] = se.get("ignore",[])
-		for s in subsets.get("binary_file_patterns",[]):
-			settings['ignore'].append(s)
-		for s in subsets.get("file_exclude_patterns",[]):
-			settings['ignore'].append(s)
-		settings['folder_exclude'] = se.get("folder_exclude",[])
-		settings['folders'] = se.get("folders",[])
-		settings['livesync'] = se.get("livesync", True)
-		settings['syncewait'] = se.get("syncewait", 10 * 60 * 1000)
-		settings['debug'] = se.get("debug",True)
-		settings['status'] = se.get("status",True)
-		settings['folder_exclude'] = se.get("folder_exclude",[])
-		settings['folders'] = se.get("folders")
-	except:
-		print('Failed creating settings')
+def buildthreads():
+	global threads
+	bd = threadbuilder(0)
+	threads['bd'] = bd.name
+	debug('Starting buildthreads:' + bd.name)
+	bd.start()
 
 # this function handles building the My Snippets context menu
 def buildsnippets():
-	buildsettings()
-	tbuildsnippets().start()
+	global threads
+	if threads.get('bs',None) == None or threads['bs'].is_alive() == False:
+		threads['bs'] = tbuildsnippets()
+		threads['bs'].start()
 
 # This command launches snippet
 class mysubsnippetsCommand(sublime_plugin.TextCommand):
@@ -202,7 +223,6 @@ class mysnippetsCommand(sublime_plugin.TextCommand):
 					txt += line
 				debug("Running Snippet: " + txt)
 				self.view.run_command('insert_snippet', {"contents": txt})
-				debug('Snippet Ran')
 
 		else:
 			sublime.error_message("File not found, has it been deleted?")
@@ -210,57 +230,58 @@ class mysnippetsCommand(sublime_plugin.TextCommand):
 
 # This async threading function runs the update for building the context menu
 class threadbuilder(threading.Thread):
-	def __init__(self):
+	def __init__(self,lastdate=0):
 		threading.Thread.__init__(self)
+		self.lastdate = lastdate
 
 	def run(self):
-		latestupdates(0)
+		latestupdates(self.lastdate)
 
 # This function gets the latest timestamp of files in the users folder paths
-def latestupdates(lastdate):
-	ldat = lastdate
-	global settings
+def latestupdates(lastdate=0):
+	global threads
+	if threads['bd'] == threading.current_thread().name:
+		ldat = lastdate
+		settings = buildsettings()
 
-	# Get folders as paths to sync snippets from
-	paths = settings.get('folders',[])
-	fsync = settings.get('livesync',True)
-	# If setting not found default wait time to 10 minutes
-	stime = settings.get('syncewait',1000 * 60 * 10)
+		# Get folders as paths to sync snippets from
+		paths = settings.get("folders")
+		fsync = settings.get("livesync", True)
+		# If setting not found default wait time to 10 minutes
+		stime = settings.get("syncewait", 10 * 60 * 1000)
 
-	chkdate = 0
+		chkdate = 0
 
-	debug("Checking for updates:\n\tSync Enabled: " + str(fsync)\
-		+ "\n\tSync Timeout: " + str(stime)\
-		+ "\n\tLatest Update at: " + str(ldat)\
-		+ "\n\tPaths: " + str(paths)\
-		)
-
-	if paths != None:
-		try:
-			for path in paths:
-				if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
-					if path['path'][-1] != '/':
-						path['path'] += '/'
-					debug(path['path'])
-					tmpdate = folderdate(path['path'])
-					debug(str(tmpdate))
-					if tmpdate > 0 and (chkdate == 0 or tmpdate > chkdate):
-						chkdate = tmpdate
-
-		except:
-			debug('My Snippets Error: Error checking paths for updated files.')
-
-	debug("Check:" + str(chkdate)\
-			+ "\nLast:" + str(ldat)\
+		debug("Checking for updates:\n\tSync Enabled: " + str(fsync)\
+			+ "\n\tSync Timeout: " + str(stime)\
+			+ "\n\tLatest Update at: " + str(time.asctime(time.gmtime(ldat)))\
+			+ "\n\tThread is: " + str(threading.current_thread().name)\
+			+ "\n\tPaths: " + str(paths)\
 			)
-	if chkdate > 0 and (ldat == 0 or chkdate > ldat):
-		buildsnippets()
-		debug("My Snippets Updated:\n\tLast Update: " + str(ldat) + '\n\tCurrent Time: ' + str(chkdate))
-		ldat = chkdate
 
-	if fsync == True and stime > 0:
-		sublime.set_timeout(lambda: latestupdates(ldat), stime)
-		return
+		if paths != None:
+			try:
+				for path in paths:
+					if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
+						if path['path'][-1] != '/':
+							path['path'] += '/'
+						tmpdate = folderdate(path['path'])
+						if tmpdate > 0 and (chkdate == 0 or tmpdate > chkdate):
+							chkdate = tmpdate
+
+			except:
+				debug('My Snippets Error: Error checking paths for updated files.')
+
+		if chkdate > 0 and (ldat == 0 or chkdate > ldat):
+			buildsnippets()
+			debug("My Snippets Updated:\n\tLast Update: " + str(time.asctime(time.gmtime(ldat)))\
+				+ '\n\tCurrent Time: ' + str(time.asctime(time.gmtime(chkdate))))
+			ldat = chkdate
+
+		if fsync == True and stime > 1000:
+			time.sleep(stime * 0.001)
+			latestupdates(ldat)
+			return
 	return
 
 # this function checks for the latest date of all files within - calls itself for subfolders
@@ -283,13 +304,13 @@ def folderdate(path):
 
 # handle output of debug text, sending to console or status bar depending on settings
 def debug(debugtext):
-	global settings
-	dbg = settings.get('debug',True)
-	stat = settings.get('status',True)
+	settings = buildsettings()
+	dbg = settings.get("debug",True)
+	stat = settings.get("status",True)
 	if dbg == True:
 		print(debugtext)
 	elif stat == True:
-		sublime.status_message(debugtext.replace('\n',' | '))
+		sublime.set_timeout(lambda: sublime.status_message(debugtext.replace('\n',' | ')), 100)
 
 # iniiate startup - delaying 2 seconds to allow sublime to get setup
 sublime.set_timeout(lambda: setup(), 4000)

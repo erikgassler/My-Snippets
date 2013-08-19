@@ -1,4 +1,4 @@
-0.11.4: Fixed threading bug found in Sublime Text 2
+0.11.5: Reworked threading to fix ST2 issues
 
 This plugin for Sublime Text 2|3 allows you to have quick access to your own commonly used code through a context menu instead of copy/pasting from files or some other coding library.
 
@@ -22,4 +22,5 @@ My Snippets automatically excludes files from "binary_file_patterns" and "file_e
 
 Version Update History:
 
+0.11.5: Reworked threading to fix ST2 issues
 0.11.4: Fixed threading bug found in Sublime Text 2
