@@ -5,16 +5,29 @@ import threading
 import re
 
 settings = {}
-subsets = {}
 
 # run initial setup - called at bottom of file
 def setup():
+	# Make sure user settings file exists
+	if os.path.exists(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings') == False:
+		debug("Creating: " + sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings')
+		with open(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings', 'w') as subset:
+			subset.write('{'\
+				+ '\n\t// Setup other folders that contain code snippets you want to include in your library'\
+				+ '\n\t// Each folder setting must have a "display" and "path" name|value pair'\
+				+ '\n\t// If path is empty, or if path is not an accessible directory, then that setting will be skipped'\
+				+ '\n\t// Leaving display empty will place directory contents in root menu'\
+				+ '\n\t"folders":['
+				+ '\n\t\t{'\
+				+ '\n\t\t\t"display": "",'\
+				+ '\n\t\t\t"path": ""'\
+				+ '\n\t\t}'\
+				+ '\n\t]'\
+				+ '\n}\n')
 	# Load all of our package settings into a global object
-	global settings
-	global subsets
-	settings = sublime.load_settings('MySnippets.sublime-settings')
-	subsets = sublime.load_settings('Preferences.sublime-settings')
-	settings.add_on_change('changed',buildsnippets)
+	buildsettings()
+	se = sublime.load_settings('MySnippets.sublime-settings')
+	se.add_on_change('changed',buildsnippets)
 	buildsnippets()
 	# set 0 to make sure we always start out with an update
 	threadbuilder().start()
@@ -22,16 +35,11 @@ def setup():
 # this builds json content for a folder and it's files, calling upon itself for subfolders - used in tbuildsnippets
 def buildfolder(path, nt, ntt = ''):
 	global settings
-	global subsets
 	strReturn = ''
 	strFolder = ''
 	# Root path for Sublime Text files - .sublime-snippet files must be within this folder or a subfolder of
-	ignorfyl = settings.get("ignore",[])
-	for s in subsets.get("binary_file_patterns",[]):
-		ignorfyl.append(s)
-	for s in subsets.get("file_exclude_patterns",[]):
-		ignorfyl.append(s)
-	ignorfld = settings.get("folder_exclude",[])
+	ignorfyl = settings["ignore"]
+	ignorfld = settings["folder_exclude"]
 
 	snips = os.listdir(path)
 
@@ -92,26 +100,8 @@ class tbuildsnippets(threading.Thread):
 		# Root path for This Package
 		root = sublime.packages_path().replace('\\','/') + '/My Snippets/'
 
-		# Make sure user settings file exists
-		if os.path.exists(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings') == False:
-			debug("Creating: " + sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings')
-			subset = open(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings', 'w')
-			subset.write('{'\
-				+ '\n\t// Setup other folders that contain code snippets you want to include in your library'\
-				+ '\n\t// Each folder setting must have a "display" and "path" name|value pair'\
-				+ '\n\t// If path is empty, or if path is not an accessible directory, then that setting will be skipped'\
-				+ '\n\t// Leaving display empty will place directory contents in root menu'\
-				+ '\n\t"folders":['
-				+ '\n\t\t{'\
-				+ '\n\t\t\t"display": "",'\
-				+ '\n\t\t\t"path": ""'\
-				+ '\n\t\t}'\
-				+ '\n\t]'\
-				+ '\n}\n')
-			subset.close()
-
 		# Get folders as paths to sync snippets from
-		paths = settings.get("folders")
+		paths = settings.get("folders",[])
 		# Create the context submenu based on the current library of snippets
 
 		# build menus from settings
@@ -141,30 +131,45 @@ class tbuildsnippets(threading.Thread):
 					os.makedirs(root)
 
 				try:
-					submen = open(root + "Context.sublime-menu", 'w')
-					submen.write('[\n\t{\n\t\t"id":"my-snippets",\n\t\t"caption":"My Snippets",\n\t\t"children":[')
-					submen.write(strPaths)
-					submen.write("\n\t\t]\n\t}\n]\n")
-					submen.close()
-
-
-					sublime.run_command('scan_project')
-					sublime.run_command('refresh_folder_list')
+					with open(root + "Context.sublime-menu", 'w') as submen:
+						submen.write('[\n\t{\n\t\t"id":"my-snippets",\n\t\t"caption":"My Snippets",\n\t\t"children":[')
+						submen.write(strPaths)
+						submen.write("\n\t\t]\n\t}\n]\n")
+						submen.close()
 					debug('Snippets Menu Built.')
 				except:
 					debug('Failed opening or writing to Context file.')
-					sublime.set_timeout(lambda: buildsnippets(), 1000)
+					sublime.set_timeout(lambda: buildsnippets(), 10000)
 			else:
 				debug('No snippets found: Context Menu not created.')
 		else:
 			debug('No "folders" found in settings.')
 
+def buildsettings():
+	global settings
+	try:
+		se = sublime.load_settings('MySnippets.sublime-settings')
+		subsets = sublime.load_settings('Preferences.sublime-settings')
+		settings = {}
+		settings['ignore'] = se.get("ignore",[])
+		for s in subsets.get("binary_file_patterns",[]):
+			settings['ignore'].append(s)
+		for s in subsets.get("file_exclude_patterns",[]):
+			settings['ignore'].append(s)
+		settings['folder_exclude'] = se.get("folder_exclude",[])
+		settings['folders'] = se.get("folders",[])
+		settings['livesync'] = se.get("livesync", True)
+		settings['syncewait'] = se.get("syncewait", 10 * 60 * 1000)
+		settings['debug'] = se.get("debug",True)
+		settings['status'] = se.get("status",True)
+		settings['folder_exclude'] = se.get("folder_exclude",[])
+		settings['folders'] = se.get("folders")
+	except:
+		print('Failed creating settings')
+
 # this function handles building the My Snippets context menu
 def buildsnippets():
-	global settings
-	global subsets
-	settings = sublime.load_settings('MySnippets.sublime-settings')
-	subsets = sublime.load_settings('Preferences.sublime-settings')
+	buildsettings()
 	tbuildsnippets().start()
 
 # This command launches snippet
@@ -217,10 +222,10 @@ def latestupdates(lastdate):
 	global settings
 
 	# Get folders as paths to sync snippets from
-	paths = settings.get("folders")
-	fsync = settings.get("livesync", True)
+	paths = settings.get('folders',[])
+	fsync = settings.get('livesync',True)
 	# If setting not found default wait time to 10 minutes
-	stime = settings.get("syncewait", 10 * 60 * 1000)
+	stime = settings.get('syncewait',1000 * 60 * 10)
 
 	chkdate = 0
 
@@ -279,8 +284,8 @@ def folderdate(path):
 # handle output of debug text, sending to console or status bar depending on settings
 def debug(debugtext):
 	global settings
-	dbg = settings.get("debug",True)
-	stat = settings.get("status",True)
+	dbg = settings.get('debug',True)
+	stat = settings.get('status',True)
 	if dbg == True:
 		print(debugtext)
 	elif stat == True:
