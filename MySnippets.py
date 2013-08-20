@@ -46,7 +46,66 @@ def buildsettings():
 		glob_settings['syncewait'] = fset.get('syncewait',10 * 60 * 1000)
 		glob_settings['main'] = fset.get('main','My Snippets')
 		glob_settings['showext'] = fset.get('showext',True)
+		glob_settings['showmain'] = fset.get('showmain',True)
 	return glob_settings
+
+def buildmain(strPaths):
+	settings = buildsettings()
+	strFile = ''
+	# Create main section
+	strFile = '['\
+		+ '\n\t{'\
+		+ '\n\t\t"caption": "Preferences",'\
+		+ '\n\t\t"mnemonic": "n",'\
+		+ '\n\t\t"id": "preferences",'\
+		+ '\n\t\t"children":'\
+		+ '\n\t\t['\
+		+ '\n\t\t\t{'\
+		+ '\n\t\t\t\t"caption": "Package Settings",'\
+		+ '\n\t\t\t\t"mnemonic": "P",'\
+		+ '\n\t\t\t\t"id": "package-settings",'\
+		+ '\n\t\t\t\t"children":'\
+		+ '\n\t\t\t\t['\
+		+ '\n\t\t\t\t\t{'\
+		+ '\n\t\t\t\t\t\t"caption": "My Snippets",'\
+		+ '\n\t\t\t\t\t\t"children":'\
+		+ '\n\t\t\t\t\t\t['\
+		+ '\n\t\t\t\t\t\t\t{'\
+		+ '\n\t\t\t\t\t\t\t\t"command": "open_file", "args":'\
+		+ '\n\t\t\t\t\t\t\t\t{'\
+		+ '\n\t\t\t\t\t\t\t\t\t"file": "${packages}/My Snippets/MySnippets.sublime-settings"'\
+		+ '\n\t\t\t\t\t\t\t\t},'\
+		+ '\n\t\t\t\t\t\t\t\t"caption": "Settings – Default"'\
+		+ '\n\t\t\t\t\t\t\t},'\
+		+ '\n\t\t\t\t\t\t\t{'\
+		+ '\n\t\t\t\t\t\t\t\t"command": "open_file", "args":'\
+		+ '\n\t\t\t\t\t\t\t\t{'\
+		+ '\n\t\t\t\t\t\t\t\t\t"file": "${packages}/User/MySnippets.sublime-settings"'\
+		+ '\n\t\t\t\t\t\t\t\t},'\
+		+ '\n\t\t\t\t\t\t\t\t"caption": "Settings – User"'\
+		+ '\n\t\t\t\t\t\t\t}'\
+		+ '\n\t\t\t\t\t\t]'\
+		+ '\n\t\t\t\t\t}'\
+		+ '\n\t\t\t\t]'\
+		+ '\n\t\t\t}'\
+		+ '\n\t\t]'\
+		+ '\n\t}'
+
+	# Create paths
+	if settings.get('showmain') == True and strPaths != '':
+		strFile += ','\
+			+ '\n{'\
+			+ '\n\t"caption": "My Snippets",'\
+			+ '\n\t"mnemonic": "m",'\
+			+ '\n\t"id": "my-snippets",'\
+			+ '\n\t"children":['\
+			+ strPaths\
+			+ '\n\t]'\
+			+ '\n}'
+	strFile += '\n]'
+	with open(sublime.packages_path().replace('\\','/') + '/My Snippets/Main.sublime-menu', 'w') as ofyl:
+		ofyl.write(strFile)
+
 
 # this builds json content for a folder and it's files, calling upon itself for subfolders - used in tbuildsnippets
 def buildfolder(path, nt, ntt = ''):
@@ -182,10 +241,12 @@ class tbuildsnippets(threading.Thread):
 							submen.write('\n\t{\n\t\t"id":"' + title + '",\n\t\t"caption":"' + title + '",\n\t\t"children":[')
 						else:
 							strPaths = strPaths.replace('\n\t\t\t','\n\t')
-						submen.write(strPaths.replace('\\','\\\\'))
+						strPaths = strPaths.replace('\\','\\\\')
+						submen.write(strPaths)
 						if title != '':
 							submen.write("\n\t\t]\n\t}")
 						submen.write('\n]\n')
+						buildmain(strPaths)
 
 					debug('Snippets Menu Built.')
 				except:
