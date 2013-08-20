@@ -47,6 +47,7 @@ def buildsettings():
 		glob_settings['main'] = fset.get('main','My Snippets')
 		glob_settings['showext'] = fset.get('showext',True)
 		glob_settings['showmain'] = fset.get('showmain',True)
+		glob_settings['debug'] = fset.get('debug',True)
 	return glob_settings
 
 def buildmain(strPaths):
