@@ -75,14 +75,14 @@ def buildmain(strPaths):
 		+ '\n\t\t\t\t\t\t\t\t{'\
 		+ '\n\t\t\t\t\t\t\t\t\t"file": "${packages}/My Snippets/MySnippets.sublime-settings"'\
 		+ '\n\t\t\t\t\t\t\t\t},'\
-		+ '\n\t\t\t\t\t\t\t\t"caption": "Settings – Default"'\
+		+ '\n\t\t\t\t\t\t\t\t"caption": "Settings - Default"'\
 		+ '\n\t\t\t\t\t\t\t},'\
 		+ '\n\t\t\t\t\t\t\t{'\
 		+ '\n\t\t\t\t\t\t\t\t"command": "open_file", "args":'\
 		+ '\n\t\t\t\t\t\t\t\t{'\
 		+ '\n\t\t\t\t\t\t\t\t\t"file": "${packages}/User/MySnippets.sublime-settings"'\
 		+ '\n\t\t\t\t\t\t\t\t},'\
-		+ '\n\t\t\t\t\t\t\t\t"caption": "Settings – User"'\
+		+ '\n\t\t\t\t\t\t\t\t"caption": "Settings - User"'\
 		+ '\n\t\t\t\t\t\t\t}'\
 		+ '\n\t\t\t\t\t\t]'\
 		+ '\n\t\t\t\t\t}'\
