@@ -7,6 +7,12 @@
 	// If path is empty, or if path is not an accessible directory, then that setting will be skipped
 	// Leaving display empty will place directory contents in root menu
 	"folders":[],
+	// Title of the 1st context menu - set blank to place your folders directly on the main context menu
+	"main":"My Snippets",
+	// No associated with "main", set this true to display the My Snippets menu in the top menu
+	"showmain": false,
+	// When true shows the file extension of each snippet in context menu as (ext) - Otherwise extension is not displayed
+	"showext": true,
 	// When true status messages are output to the python console after various processes
 	"debug": true,
 	// Only use when debug is set to false, display status messages in status bar

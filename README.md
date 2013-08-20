@@ -1,4 +1,4 @@
-0.14.1: Fix bug from invalid character.
+0.14.2: Whoops, forgot to include the updated settings file.
 
 This plugin for Sublime Text 2|3 allows you to have quick access to your own commonly used code through a context menu instead of copy/pasting from files or some other coding library.
 
@@ -21,6 +21,8 @@ My Snippets also allows snippets with any other file extension. When using file 
 My Snippets automatically excludes files from "binary_file_patterns" and "file_exclude_patterns" found in your Preferences.sublime-settings settings.
 
 Version Update History:
+
+0.14.2: Whoops, forgot to include the updated settings file.
 
 0.14.1: Fix bug from invalid character.
 
