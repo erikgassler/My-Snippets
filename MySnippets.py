@@ -44,6 +44,7 @@ def buildsettings():
 		glob_settings['folders'] = fset.get('folders',[])
 		glob_settings['livesync'] = fset.get('livesync',True)
 		glob_settings['syncewait'] = fset.get('syncewait',10 * 60 * 1000)
+		glob_settings['main'] = fset.get('main','My Snippets')
 	return glob_settings
 
 # this builds json content for a folder and it's files, calling upon itself for subfolders - used in tbuildsnippets
@@ -54,22 +55,28 @@ def buildfolder(path, nt, ntt = ''):
 	# Root path for Sublime Text files - .sublime-snippet files must be within this folder or a subfolder of
 	ignorfyl = settings.get("ignore",[])
 	ignorfld = settings.get("folder_exclude",[])
-
 	snips = os.listdir(path)
-
+	if '\\' in path:
+		delim = '\\'
+	else:
+		delim = '/'
 	i = 0
 	f = 0
-	if not path[-1] == '/':
-		path += '/'
+	if not path[-1] == delim:
+		path += delim
 	for snip in snips:
 
 		if os.path.isdir(path + snip):
 			if not snip in ignorfld:
-				strTemp = buildfolder(path + snip + '/', nt + '\t\t')
+				myid = re.sub('[^A-Za-z]+','','mysnippets' + snip)
+				strTemp = buildfolder(path + snip + delim, nt + '\t\t')
 				if strTemp != '':
 					if f > 0:
 						strFolder += ','
-					strFolder += nt + ntt + '{' + nt + '\t"caption": "' + snip + '",' + nt + '\t"children": ['
+					strFolder += nt + ntt + '{'\
+						+ nt + '\t"id": "' + myid + '",'
+					strFolder += nt + '\t"caption": "' + snip + '",'
+					strFolder += nt + '\t"children": ['
 					strFolder += strTemp
 					strFolder += nt + '\t]' + nt + '}'
 					f += 1
@@ -117,20 +124,19 @@ class tbuildsnippets(threading.Thread):
 		# Make sure user settings file exists
 		if os.path.exists(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings') == False:
 			debug("Creating: " + sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings')
-			subset = open(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings', 'w')
-			subset.write('{'\
-				+ '\n\t// Setup other folders that contain code snippets you want to include in your library'\
-				+ '\n\t// Each folder setting must have a "display" and "path" name|value pair'\
-				+ '\n\t// If path is empty, or if path is not an accessible directory, then that setting will be skipped'\
-				+ '\n\t// Leaving display empty will place directory contents in root menu'\
-				+ '\n\t"folders":['
-				+ '\n\t\t{'\
-				+ '\n\t\t\t"display": "",'\
-				+ '\n\t\t\t"path": ""'\
-				+ '\n\t\t}'\
-				+ '\n\t]'\
-				+ '\n}\n')
-			subset.close()
+			with open(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings', 'w') as subset:
+				subset.write('{'\
+					+ '\n\t// Setup other folders that contain code snippets you want to include in your library'\
+					+ '\n\t// Each folder setting must have a "display" and "path" name|value pair'\
+					+ '\n\t// If path is empty, or if path is not an accessible directory, then that setting will be skipped'\
+					+ '\n\t// Leaving display empty will place directory contents in root menu'\
+					+ '\n\t"folders":['
+					+ '\n\t\t{'\
+					+ '\n\t\t\t"display": "",'\
+					+ '\n\t\t\t"path": ""'\
+					+ '\n\t\t}'\
+					+ '\n\t]'\
+					+ '\n}\n')
 
 		# Root path for This Package
 		root = sublime.packages_path().replace('\\','/') + '/My Snippets/'
@@ -143,6 +149,8 @@ class tbuildsnippets(threading.Thread):
 			nt = '\n\t\t\t'
 			for path in paths:
 				if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
+					if path['path'][-1] == '/' and '\\' in path['path']:
+						path['path'] = path['path'].rstrip('/')
 
 					strTemp = buildfolder(path['path'],nt + '')
 					if strTemp != '':
@@ -164,10 +172,17 @@ class tbuildsnippets(threading.Thread):
 					os.makedirs(root)
 
 				try:
+					title = settings.get('main','')
 					with open(root + "Context.sublime-menu", 'w') as submen:
-						submen.write('[\n\t{\n\t\t"id":"my-snippets",\n\t\t"caption":"My Snippets",\n\t\t"children":[')
-						submen.write(strPaths)
-						submen.write("\n\t\t]\n\t}\n]\n")
+						submen.write('[')
+						if title != '':
+							submen.write('\n\t{\n\t\t"id":"' + title + '",\n\t\t"caption":"' + title + '",\n\t\t"children":[')
+						else:
+							strPaths = strPaths.replace('\n\t\t\t','\n\t')
+						submen.write(strPaths.replace('\\','\\\\'))
+						if title != '':
+							submen.write("\n\t\t]\n\t}")
+						submen.write('\n]\n')
 
 					debug('Snippets Menu Built.')
 				except:
@@ -263,8 +278,12 @@ def latestupdates(lastdate=0):
 			try:
 				for path in paths:
 					if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
-						if path['path'][-1] != '/':
-							path['path'] += '/'
+						if '\\' in path:
+							delim = '\\'
+						else:
+							delim = '/'
+						if path['path'][-1] != delim:
+							path['path'] += delim
 						tmpdate = folderdate(path['path'])
 						if tmpdate > 0 and (chkdate == 0 or tmpdate > chkdate):
 							chkdate = tmpdate
@@ -287,12 +306,16 @@ def latestupdates(lastdate=0):
 # this function checks for the latest date of all files within - calls itself for subfolders
 def folderdate(path):
 	chkdate = 0
-	if path[-1] != '/':
-		path += '/'
+	if '\\' in path:
+		delim = '\\'
+	else:
+		delim = '/'
+	if path[-1] != delim:
+		path += delim
 	snips = os.listdir(path)
 	for snip in snips:
 		if os.path.isdir(path + snip):
-			tmpdate = folderdate(path + snip + '/')
+			tmpdate = folderdate(path + snip + delim)
 			if tmpdate != '' and (chkdate == '' or tmpdate > chkdate):
 				chkdate = tmpdate
 		else:
