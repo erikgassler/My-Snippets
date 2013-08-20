@@ -1,4 +1,4 @@
-0.12.0: Added option for main context menu folder's display
+0.13.0: Add option for display file extensions in menu
 
 This plugin for Sublime Text 2|3 allows you to have quick access to your own commonly used code through a context menu instead of copy/pasting from files or some other coding library.
 
@@ -21,6 +21,8 @@ My Snippets also allows snippets with any other file extension. When using file 
 My Snippets automatically excludes files from "binary_file_patterns" and "file_exclude_patterns" found in your Preferences.sublime-settings settings.
 
 Version Update History:
+
+0.13.0: Add option for display file extensions in menu
 
 0.12.0: Added option for main context menu folder's display
 

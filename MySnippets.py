@@ -45,6 +45,7 @@ def buildsettings():
 		glob_settings['livesync'] = fset.get('livesync',True)
 		glob_settings['syncewait'] = fset.get('syncewait',10 * 60 * 1000)
 		glob_settings['main'] = fset.get('main','My Snippets')
+		glob_settings['showext'] = fset.get('showext',True)
 	return glob_settings
 
 # this builds json content for a folder and it's files, calling upon itself for subfolders - used in tbuildsnippets
@@ -102,6 +103,8 @@ def buildfolder(path, nt, ntt = ''):
 					strSnip = path + snip
 
 				cap = re.sub('\..*','',snip)
+				if settings.get('showext') == True and ext != '':
+					cap += ' (' + ext + ')'
 				strReturn += nt + '{' + nt + '\t"caption": "' + cap + '",' + nt + '\t"command": "' + com + '",' + nt + '\t"args": {' + nt + '\t\t"snippet": "' + strSnip + '"' + nt + '\t}' + nt + '}'
 				i += 1
 
