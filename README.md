@@ -1,4 +1,4 @@
-0.14.3: Fixed missing loading of debug setting.
+0.15.0: Added ability to setup tab-like key bindings to initiate snippets.
 
 This plugin for Sublime Text 2|3 allows you to have quick access to your own commonly used code through a context menu instead of copy/pasting from files or some other coding library.
 
@@ -20,7 +20,17 @@ My Snippets also allows snippets with any other file extension. When using file 
 
 My Snippets automatically excludes files from "binary_file_patterns" and "file_exclude_patterns" found in your Preferences.sublime-settings settings.
 
+Key Binding:
+By default shift+enter is a key binding setup for initiating snippets based on tags.
+To set a tag for a snippet include the tag value inside square brackets in the file name for the snippet - such as "My Snippet [mysnip].html".
+Then in your code you can type in your tag followed by the key bind command (shift+enter) to replace the tag with the linked snippet.
+If multiple snippets are loaded with the same tag only the last one loaded can use the key bind feature.
+Please note that the text that is looked up as the tag will be deleted, regardless of whether or not a valid key was found from the tag.
+Also note that if multiple cursor locations exist, all cursors will be scanned for tags and only the last valid snippet will be used; And any tags found preceding any of the cursors will be deleted, even if they were not the tag used for the loaded snippet.
+
 Version Update History:
+
+0.15.0: Added ability to setup tab-like key bindings to initiate snippets.
 
 0.14.3: Fixed missing loading of debug setting.
 

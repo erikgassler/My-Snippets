@@ -27,6 +27,7 @@ def settingschanged():
 	buildthreads()
 
 glob_settings = {}
+glob_snippets = {}
 
 # returns settings object built from settings file
 def buildsettings():
@@ -107,6 +108,15 @@ def buildmain(strPaths):
 	with open(sublime.packages_path().replace('\\','/') + '/My Snippets/Main.sublime-menu', 'w') as ofyl:
 		ofyl.write(strFile)
 
+def buildkeybinding():
+	settings = buildsettings()
+	strFile = '['
+	keybind = settings.get('keybind','shift+enter')
+	if keybind != '':
+		strFile += '\n\t{ "keys": ["' + keybind + '"], "command": "my_snippets_lookup" }'
+	strFile += '\n]'
+	with open(sublime.packages_path().replace('\\','/') + '/My Snippets/Default.sublime-keymap', 'w') as kfyl:
+		kfyl.write(strFile)
 
 # this builds json content for a folder and it's files, calling upon itself for subfolders - used in tbuildsnippets
 def buildfolder(path, nt, ntt = ''):
@@ -163,6 +173,12 @@ def buildfolder(path, nt, ntt = ''):
 					strSnip = path + snip
 
 				cap = re.sub('\..*','',snip)
+
+				keys = re.findall('\[[A-Za-z0-9]+\]',cap)
+				for key in keys:
+					if key != '':
+						glob_snippets[key.lstrip('[').rstrip(']')] = strSnip
+
 				if settings.get('showext') == True and ext != '':
 					cap += ' (' + ext + ')'
 				strReturn += nt + '{' + nt + '\t"caption": "' + cap + '",' + nt + '\t"command": "' + com + '",' + nt + '\t"args": {' + nt + '\t\t"snippet": "' + strSnip + '"' + nt + '\t}' + nt + '}'
@@ -186,7 +202,6 @@ class tbuildsnippets(threading.Thread):
 
 		# Make sure user settings file exists
 		if os.path.exists(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings') == False:
-			debug("Creating: " + sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings')
 			with open(sublime.packages_path().replace('\\','/') + '/User/MySnippets.sublime-settings', 'w') as subset:
 				subset.write('{'\
 					+ '\n\t// Setup other folders that contain code snippets you want to include in your library'\
@@ -247,6 +262,7 @@ class tbuildsnippets(threading.Thread):
 						if title != '':
 							submen.write("\n\t\t]\n\t}")
 						submen.write('\n]\n')
+						buildkeybinding()
 						buildmain(strPaths)
 
 					debug('Snippets Menu Built.')
@@ -262,8 +278,7 @@ class tbuildsnippets(threading.Thread):
 def buildthreads():
 	global threads
 	bd = threadbuilder(0)
-	threads['bd'] = bd.name
-	debug('Starting buildthreads:' + bd.name)
+	threads['bt'] = bd.name
 	bd.start()
 
 # this function handles building the My Snippets context menu
@@ -273,18 +288,32 @@ def buildsnippets():
 		threads['bs'] = tbuildsnippets()
 		threads['bs'].start()
 
+class MySnippetsLookupCommand(sublime_plugin.TextCommand):
+	def run(self, edit, **args):
+		global glob_snippets
+		view = self.view
+		sels = view.sel()
+		snip = ''
+		for sel in sels:
+			word = view.word(sel)
+			tsnip = view.substr(word)
+			if tsnip != '' and tsnip in glob_snippets:
+				snip = tsnip
+				view.erase(edit, word)
+		if snip != '' and snip in glob_snippets:
+			view.erase_regions(snip)
+			view.run_command('mysubsnippets',{"snippet":glob_snippets[snip]})
+
 # This command launches snippet
 class mysubsnippetsCommand(sublime_plugin.TextCommand):
 	def run(self, edit, **args):
 		# Make sure file actually exists before trying to run snippet
 		if 'snippet' in args and os.path.isfile(args['snippet']):
-			debug("Requested Snippet(1): " + args['snippet'])
 			with open(args['snippet']) as snippet:
 				txt = ''
 				for line in snippet:
 					txt += line
 				txt = re.sub('.*\<\!\[CDATA\[|\]\]\>.*','',txt,flags=re.S|re.I)
-				debug("Running Snippet: " + txt)
 				self.view.run_command('insert_snippet', {"contents": txt})
 
 		else:
@@ -296,12 +325,10 @@ class mysnippetsCommand(sublime_plugin.TextCommand):
 	def run(self, edit, **args):
 		# Open the file dicated by args['snippet']
 		if 'snippet' in args and os.path.isfile(args['snippet']):
-			debug("Requested Snippet(2): " + args['snippet'])
 			with open(args['snippet']) as snippet:
 				txt = ''
 				for line in snippet:
 					txt += line
-				debug("Running Snippet: " + txt)
 				self.view.run_command('insert_snippet', {"contents": txt})
 
 		else:
@@ -320,7 +347,7 @@ class threadbuilder(threading.Thread):
 # This function gets the latest timestamp of files in the users folder paths
 def latestupdates(lastdate=0):
 	global threads
-	if threads['bd'] == threading.current_thread().name:
+	if threads['bt'] == threading.current_thread().name:
 		ldat = lastdate
 		settings = buildsettings()
 

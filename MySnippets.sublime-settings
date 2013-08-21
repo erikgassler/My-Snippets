@@ -26,5 +26,9 @@
 	// File patterns to ignore
 	"ignore":["*.gitignore","*.project","settings.xml"],
 	// Exclude any subfolders with these names
-	"folder_exclude":[".svn",".git",".hg","CVS"]
+	"folder_exclude":[".svn",".git",".hg","CVS"],
+	// set what key binding will initiate a my snippets snippet
+	// This feature requires file names include a tag set inside square brackets [tag].
+	// To call the snippet type the tag and then press the key binding (defaults as shift+enter)
+	"keybind": "shift+enter"
 }
