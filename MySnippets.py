@@ -177,7 +177,7 @@ def buildfolder(path, nt, ntt = ''):
 				keys = re.findall('\[[A-Za-z0-9]+\]',cap)
 				for key in keys:
 					if key != '':
-						glob_snippets[key.lstrip('[').rstrip(']')] = strSnip
+						glob_snippets[key.lstrip('[').rstrip(']')] = {"snippet":strSnip,"ext":ext}
 
 				if settings.get('showext') == True and ext != '':
 					cap += ' (' + ext + ')'
@@ -302,7 +302,10 @@ class MySnippetsLookupCommand(sublime_plugin.TextCommand):
 				view.erase(edit, word)
 		if snip != '' and snip in glob_snippets:
 			view.erase_regions(snip)
-			view.run_command('mysubsnippets',{"snippet":glob_snippets[snip]})
+			if glob_snippets[snip]["ext"] == 'sublime-snippet':
+				view.run_command('mysubsnippets',{"snippet":glob_snippets[snip]["snippet"]})
+			else:
+				view.run_command('mysnippets',{"snippet":glob_snippets[snip]["snippet"]})
 
 # This command launches snippet
 class mysubsnippetsCommand(sublime_plugin.TextCommand):
@@ -313,7 +316,7 @@ class mysubsnippetsCommand(sublime_plugin.TextCommand):
 				txt = ''
 				for line in snippet:
 					txt += line
-				txt = re.sub('.*\<\!\[CDATA\[|\]\]\>.*','',txt,flags=re.S|re.I)
+				txt = re.sub('.*\<\!\[CDATA\[|\]\]\>.*','',txt,re.S|re.I)
 				self.view.run_command('insert_snippet', {"contents": txt})
 
 		else:

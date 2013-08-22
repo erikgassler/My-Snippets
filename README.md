@@ -1,4 +1,4 @@
-0.15.0: Added ability to setup tab-like key bindings to initiate snippets.
+0.15.1: Fixed ST2 bug when initiating snippet through a tag command.
 
 This plugin for Sublime Text 2|3 allows you to have quick access to your own commonly used code through a context menu instead of copy/pasting from files or some other coding library.
 
@@ -29,6 +29,8 @@ Please note that the text that is looked up as the tag will be deleted, regardle
 Also note that if multiple cursor locations exist, all cursors will be scanned for tags and only the last valid snippet will be used; And any tags found preceding any of the cursors will be deleted, even if they were not the tag used for the loaded snippet.
 
 Version Update History:
+
+0.15.1: Fixed ST2 bug when initiating snippet through a tag command.
 
 0.15.0: Added ability to setup tab-like key bindings to initiate snippets.
 
