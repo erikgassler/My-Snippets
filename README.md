@@ -8,19 +8,27 @@ Available via [Package Control](https://sublime.wbond.net/installation) - search
 
 ## Configuration
 
-After installing you will need to edit the Preferences -> Package Settings -> My Snippets -> Settings - User file. Include the name and absolute path for each folder that contains your snippets library. Note that all sub-folders will also be automatically included. Ex:
+After installing you will need to edit the Preferences -> Package Settings -> My Snippets -> Settings - User file. Include the name and absolute path for each folder that contains your snippets library.
+Note that all sub-folders will also be automatically included.
+Note that folders will not appear in menu if they are empty.
+Note that relative paths are relative from Sublime folder inside the settings and packages are contained. See example below for example of Windows paths.
+Ex:
 
 	"folders":[
-		{
-			"display": "JavaScript",
-			"path": "C:/Program Files/Sublime Text 2/Packages/User/JSSnippets/"
+		{//Example of including library with a full path
+			"display": "Example1",
+			"path": "C:/Users/Me/AppData/Roaming/Sublime Text 3/Packages/User/JSSnippets/"
+		},
+		{//Example of including same library from a relative path
+			"display": "Example2",//Snippets and subfolders will appear directly in the main snippets folder or root context menu.
+			"path": "./Packages/User/JSSnippets/"
 		}
 
-If you want all your snippets directly under "My Snippets" in the context menu, leave the `display` value as an empty string. Ex: `"display": "",` 
+If you want all your snippets directly under "My Snippets" in the context menu, leave the `display` value as an empty string. Ex: `"display": "",`
 
 ## Most Recent Update:
 
-0.15.1: Fixed ST2 bug when initiating snippet through a tag command.
+0.16.1: Added ability for users to have relative paths for their library paths.
 
 [Older updates](#version-history)
 
@@ -54,6 +62,8 @@ Please note that the text that is looked up as the tag will be deleted, regardle
 Also note that if multiple cursor locations exist, all cursors will be scanned for tags and only the last valid snippet will be used; And any tags found preceding any of the cursors will be deleted, even if they were not the tag used for the loaded snippet.
 
 ## <a id="version-history"></a> Version Update History:
+
+0.16.1: Added ability for users to have relative paths for their library paths.
 
 0.15.1: Fixed ST2 bug when initiating snippet through a tag command.
 
