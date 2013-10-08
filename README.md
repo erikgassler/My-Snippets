@@ -26,7 +26,6 @@ Ex:
 		}
 =======
 After installing you will need to edit the Preferences -> Package Settings -> My Snippets -> Settings - User file. Include the name and path (relative to ?) for each folder that contains your snippets library. Note that all sub-folders will also be automatically included.
->>>>>>> parent of e3ae5c1... Updated readme with example configuration.
 
 If you want all your snippets directly under "My Snippets" in the context menu, leave the `display` value as an empty string. Ex: `"display": "",`
 
