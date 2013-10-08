@@ -226,10 +226,13 @@ class tbuildsnippets(threading.Thread):
 			strPaths = ''
 			nt = '\n\t\t\t'
 			for path in paths:
+				# Replace relative paths with full path name
+				if "path" in path and path['path'].startswith('./'):
+					path['path'] = path['path'].replace('./',root.replace('/Packages/My Snippets/','/',1),1)
 				if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
+					print(path['path'])
 					if path['path'][-1] == '/' and '\\' in path['path']:
-						path['path'] = path['path'].rstrip('/')
-
+						path['path'] = path['path'].rstrip('/')This is a test Snippet.
 					strTemp = buildfolder(path['path'],nt + '')
 					if strTemp != '':
 						if strPaths != '':
