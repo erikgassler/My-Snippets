@@ -232,7 +232,7 @@ class tbuildsnippets(threading.Thread):
 				if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
 					print(path['path'])
 					if path['path'][-1] == '/' and '\\' in path['path']:
-						path['path'] = path['path'].rstrip('/')This is a test Snippet.
+						path['path'] = path['path'].rstrip('/')
 					strTemp = buildfolder(path['path'],nt + '')
 					if strTemp != '':
 						if strPaths != '':
