@@ -31,7 +31,7 @@ If you want all your snippets directly under "My Snippets" in the context menu, 
 
 ## Most Recent Update:
 
-0.17.7: Fixed issue with .sublime-snippet files not correctly removing wrapping XML in Sublime Text 3.
+0.17.8: Fixed issue with .sublime-snippet files not correctly removing wrapping XML in Sublime Text 3.
 
 [Older updates](#version-history)
 
@@ -66,7 +66,7 @@ Also note that if multiple cursor locations exist, all cursors will be scanned f
 
 ## <a id="version-history"></a> Version Update History:
 
-0.17.7: Fixed issue with .sublime-snippet files not correctly removing wrapping XML in Sublime Text 3.
+0.17.8: Fixed issue with .sublime-snippet files not correctly removing wrapping XML in Sublime Text 3.
 
 0.16.0: Added ability for users to have relative paths for their library paths.
 

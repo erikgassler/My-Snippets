@@ -323,7 +323,7 @@ class mysubsnippetsCommand(sublime_plugin.TextCommand):
 				try:
 					#Python 2 (ST3) takes up to 5 arguments
 					txt = re.sub('(^.*\<\!\[CDATA\[|\]\]\>.*$)','',txt,0,re.DOTALL|re.IGNORECASE)
-				except e:
+				except:
 					#Older python (ST2) only takes up to 4 arguments
 					txt = re.sub('(^.*\<\!\[CDATA\[|\]\]\>.*$)','',txt,re.DOTALL|re.IGNORECASE)
 
