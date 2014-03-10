@@ -232,7 +232,7 @@ class tbuildsnippets(threading.Thread):
 				if "path" in path and path['path'] != '' and os.path.isdir(path['path']):
 					print(path['path'])
 					if path['path'][-1] == '/' and '\\' in path['path']:
-						path['path'] = path['path'].rstrip('/')This is a test Snippet.
+						path['path'] = path['path'].rstrip('/')
 					strTemp = buildfolder(path['path'],nt + '')
 					if strTemp != '':
 						if strPaths != '':
@@ -319,7 +319,7 @@ class mysubsnippetsCommand(sublime_plugin.TextCommand):
 				txt = ''
 				for line in snippet:
 					txt += line
-				txt = re.sub('.*\<\!\[CDATA\[|\]\]\>.*','',txt,re.S|re.I)
+				txt = re.sub('(^.*\<\!\[CDATA\[|\]\]\>.*$)','',txt,0,re.DOTALL|re.IGNORECASE)
 				self.view.run_command('insert_snippet', {"contents": txt})
 
 		else:
