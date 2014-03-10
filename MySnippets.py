@@ -320,7 +320,13 @@ class mysubsnippetsCommand(sublime_plugin.TextCommand):
 				txt = ''
 				for line in snippet:
 					txt += line
-				txt = re.sub('(^.*\<\!\[CDATA\[|\]\]\>.*$)','',txt,0,re.DOTALL|re.IGNORECASE)
+				try:
+					#Python 2 (ST3) takes up to 5 arguments
+					txt = re.sub('(^.*\<\!\[CDATA\[|\]\]\>.*$)','',txt,0,re.DOTALL|re.IGNORECASE)
+				except e:
+					#Older python (ST2) only takes up to 4 arguments
+					txt = re.sub('(^.*\<\!\[CDATA\[|\]\]\>.*$)','',txt,re.DOTALL|re.IGNORECASE)
+
 				self.view.run_command('insert_snippet', {"contents": txt})
 
 		else:
