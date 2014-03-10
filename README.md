@@ -31,7 +31,7 @@ If you want all your snippets directly under "My Snippets" in the context menu, 
 
 ## Most Recent Update:
 
-0.16.0: Added ability for users to have relative paths for their library paths.
+0.17.6: Fixed issue with .sublime-snippet files not correctly removing wrapping XML.
 
 [Older updates](#version-history)
 
@@ -65,6 +65,8 @@ Please note that the text that is looked up as the tag will be deleted, regardle
 Also note that if multiple cursor locations exist, all cursors will be scanned for tags and only the last valid snippet will be used; And any tags found preceding any of the cursors will be deleted, even if they were not the tag used for the loaded snippet.
 
 ## <a id="version-history"></a> Version Update History:
+
+0.17.6: Fixed issue with .sublime-snippet files not correctly removing wrapping XML.
 
 0.16.0: Added ability for users to have relative paths for their library paths.
 
