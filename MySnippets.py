@@ -51,6 +51,7 @@ def buildsettings():
 		glob_settings['debug'] = fset.get('debug',True)
 	return glob_settings
 
+#build default settings file
 def buildmain(strPaths):
 	settings = buildsettings()
 	strFile = ''
